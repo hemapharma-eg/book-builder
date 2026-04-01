@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Book Library & Editor</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Phosphor Icons for Ribbon UI -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- html2pdf for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Lora', 'serif'],
+                    },
+                    colors: {
+                        sepia: {
+                            bg: '#f4ecd8',
+                            text: '#433422',
+                            border: '#e0d5ba',
+                            sidebar: '#ece3ce'
+                        },
+                        office: {
+                            bg: '#f3f2f1', 
+                            active: '#ffffff',
+                            tabText: '#0078d4', 
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Tailwind Typography Plugin -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+
+    <style>
+        body.theme-light { @apply bg-white text-slate-900; }
+        body.theme-dark { @apply bg-slate-900 text-slate-200; }
+        body.theme-sepia { @apply bg-sepia-bg text-sepia-text; }
+
+        body.theme-light .ui-panel { @apply bg-slate-50 border-slate-200; }
+        body.theme-dark .ui-panel { @apply bg-slate-950 border-slate-800 text-slate-300; }
+        body.theme-sepia .ui-panel { @apply bg-sepia-sidebar border-sepia-border text-sepia-text; }
+
+        body.theme-light .ui-button { @apply hover:bg-slate-200 text-slate-700; }
+        body.theme-dark .ui-button { @apply hover:bg-slate-800 text-slate-300; }
+        body.theme-sepia .ui-button { @apply hover:bg-[#e0d5ba] text-[#433422]; }
+
+        body.theme-light .toc-active { @apply bg-blue-100 text-blue-700 font-medium; }
+        body.theme-dark .toc-active { @apply bg-blue-900/50 text-blue-300 font-medium; }
+        body.theme-sepia .toc-active { @apply bg-[#dfd3b6] text-[#433422] font-semibold; }
+
+        body.theme-dark .prose {
+            --tw-prose-body: #e2e8f0;
+            --tw-prose-headings: #f8fafc;
+            --tw-prose-links: #93c5fd;
+            --tw-prose-bold: #f8fafc;
+            --tw-prose-quotes: #cbd5e1;
+        }
+        body.theme-sepia .prose {
+            --tw-prose-body: #433422;
+            --tw-prose-headings: #2b2115;
+            --tw-prose-links: #b45309;
+            --tw-prose-bold: #2b2115;
+            --tw-prose-quotes: #5b4636;
+        }
+
+        #editor-content:focus { outline: none; }
+        .edit-mode-active #editor-content {
+            min-height: 50vh;
+            padding: 1.5rem;
+            border: 1px dashed rgba(156, 163, 175, 0.5);
+            border-radius: 0.5rem;
+            background: rgba(156, 163, 175, 0.05);
+        }
+
+        /* Explicit fixes for Subscript and Superscript rendering */
+        #editor-content sub, .prose sub { vertical-align: sub !important; font-size: 0.75em !important; line-height: 0; }
+        #editor-content sup, .prose sup { vertical-align: super !important; font-size: 0.75em !important; line-height: 0; }
+        
+        /* Table Styles injected via Ribbon */
+        .editor-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; margin-bottom: 1.5rem; }
+        .editor-table td, .editor-table th { border: 1px solid #cbd5e1; padding: 0.5rem 0.75rem; min-width: 50px; transition: background-color 0.2s; }
+        .theme-dark .editor-table td, .theme-dark .editor-table th { border-color: #334155; }
+        .editor-table.banded-rows tr:nth-child(even) td { background-color: rgba(0,0,0,0.03); }
+        .theme-dark .editor-table.banded-rows tr:nth-child(even) td { background-color: rgba(255,255,255,0.03); }
+        .editor-table th { font-weight: 600; background-color: rgba(0,0,0,0.05); text-align: left; }
+        .theme-dark .editor-table th { background-color: rgba(255,255,255,0.05); }
+        .editor-table.no-borders td, .editor-table.no-borders th { border: none !important; }
+
+        /* General Image styling inside editor */
+        #editor-content img { max-width: 100%; height: auto; transition: box-shadow 0.2s; }
+
+        #print-container { display: none; }
+        html { scroll-behavior: smooth; }
+        
+        #loading-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            color: white;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-size: 1.25rem;
+        }
+
+        .ribbon-panel::-webkit-scrollbar { height: 6px; }
+        .ribbon-panel::-webkit-scrollbar-track { background: transparent; }
+        .ribbon-panel::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+        .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="theme-light font-sans transition-colors duration-300 h-screen overflow-hidden flex relative">
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay">
+        <i class="ph ph-spinner-gap animate-spin text-4xl mb-4"></i>
+        <span>Generating PDF...</span>
+    </div>
+
+    <!-- Custom Modals Overlay -->
+    <div id="custom-modal-overlay" class="fixed inset-0 bg-black/60 z-50 hidden flex-col items-center justify-center">
+        <!-- Add/Rename Section Modal -->
+        <div id="section-modal" class="hidden bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl w-96 max-w-[90%] border border-slate-200 dark:border-slate-700">
+            <h3 id="section-modal-title" class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Add New Section</h3>
+            <input type="text" id="section-title-input" placeholder="Enter section title..." class="w-full border border-gray-300 dark:border-slate-600 p-2 rounded mb-4 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div class="flex justify-end gap-2">
+                <button class="modal-cancel-btn px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600 rounded text-slate-800 dark:text-white transition">Cancel</button>
+                <button id="section-confirm-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition">Save</button>
+            </div>
+        </div>
+
+        <!-- Paste Content Modal -->
+        <div id="paste-modal" class="hidden bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl w-[500px] max-w-[90%] border border-slate-200 dark:border-slate-700">
+            <h3 class="text-lg font-bold mb-2 text-slate-900 dark:text-white">Paste Content</h3>
+            <p class="text-xs mb-4 text-slate-600 dark:text-slate-400">Please paste (Ctrl+V / Cmd+V) your text below to insert it into your document.</p>
+            <textarea id="paste-content-area" class="w-full h-40 border border-gray-300 dark:border-slate-600 p-2 rounded mb-4 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            <div class="flex justify-end gap-2">
+                <button class="modal-cancel-btn px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600 rounded text-slate-800 dark:text-white transition">Cancel</button>
+                <button id="paste-confirm-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition">Insert Text</button>
+            </div>
+        </div>
+
+        <!-- Hyperlink Modal -->
+        <div id="link-modal" class="hidden bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl w-96 max-w-[90%] border border-slate-200 dark:border-slate-700">
+            <h3 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Insert Hyperlink</h3>
+            <input type="url" id="link-url-input" placeholder="https://..." class="w-full border border-gray-300 dark:border-slate-600 p-2 rounded mb-4 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div class="flex justify-end gap-2">
+                <button class="modal-cancel-btn px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600 rounded text-slate-800 dark:text-white transition">Cancel</button>
+                <button id="link-confirm-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition">Insert Link</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== HOME SCREEN VIEW ==================== -->
+    <div id="home-view" class="w-full h-full flex flex-col absolute inset-0 z-40 bg-inherit overflow-y-auto">
+        <header class="ui-panel h-16 border-b flex items-center justify-between px-6 flex-shrink-0 sticky top-0 z-10 shadow-sm">
+            <h1 class="font-bold text-xl flex items-center gap-2"><i class="ph ph-books text-blue-600"></i> My Library</h1>
+            <div class="flex items-center gap-2">
+                <label class="ui-button px-3 py-1.5 rounded-lg text-sm font-medium cursor-pointer border border-current opacity-70 hover:opacity-100 flex items-center gap-2 transition" title="Import Library JSON">
+                    <i class="ph ph-upload-simple text-lg"></i> <span class="hidden sm:inline">Import JSON</span>
+                    <input type="file" id="import-json-btn" accept=".json" class="hidden">
+                </label>
+                <button id="export-json-btn" class="ui-button px-3 py-1.5 rounded-lg text-sm font-medium border border-current opacity-70 hover:opacity-100 flex items-center gap-2 transition" title="Export Library JSON">
+                    <i class="ph ph-download-simple text-lg"></i> <span class="hidden sm:inline">Export JSON</span>
+                </button>
+                <!-- Theme Selectors -->
+                <div class="hidden sm:flex bg-black/5 dark:bg-white/10 rounded-lg p-1 ml-4">
+                    <button class="theme-btn p-1 rounded-md text-sm ui-button transition-colors" data-theme="theme-light" title="Light Mode"><i class="ph ph-sun"></i></button>
+                    <button class="theme-btn p-1 rounded-md text-sm ui-button transition-colors" data-theme="theme-sepia" title="Sepia Mode"><i class="ph ph-coffee"></i></button>
+                    <button class="theme-btn p-1 rounded-md text-sm ui-button transition-colors" data-theme="theme-dark" title="Dark Mode"><i class="ph ph-moon"></i></button>
+                </div>
+            </div>
+        </header>
+        
+        <main class="p-6 md:p-10 w-full max-w-7xl mx-auto flex-grow flex flex-col">
+            <p class="text-slate-500 dark:text-slate-400 mb-8">Manage your digital books. Create a new one or continue editing an existing project.</p>
+            <div id="book-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pb-12">
+                <!-- Book Cards Generated Here via JS -->
+            </div>
+        </main>
+    </div>
+
+
+    <!-- ==================== EDITOR VIEW ==================== -->
+    <div id="editor-view" class="hidden w-full h-full flex relative z-30 bg-inherit">
+        
+        <!-- Sidebar (Table of Contents & Navigation Pane) -->
+        <aside id="sidebar" class="ui-panel w-80 border-r flex-shrink-0 flex flex-col transition-transform duration-300 absolute md:relative z-20 h-full -translate-x-full md:translate-x-0">
+            <div class="p-6 border-b ui-panel flex justify-between items-center">
+                <h2 class="text-lg font-bold tracking-tight">Navigation Pane</h2>
+                <button id="close-sidebar-btn" class="md:hidden ui-button p-2 rounded-lg" aria-label="Close menu">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="overflow-y-auto sidebar-scroll flex-grow p-4">
+                <ul id="toc-list" class="space-y-3">
+                    <!-- TOC items generated by JS -->
+                </ul>
+            </div>
+
+            <!-- Sidebar footer with Edit Controls -->
+            <div class="p-4 border-t ui-panel flex flex-col gap-2">
+                <button id="sidebar-add-chapter-btn" class="hidden w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition flex items-center justify-center gap-2">
+                    <i class="ph ph-plus-circle text-lg"></i> Add Section
+                </button>
+                <div class="text-xs text-center opacity-70 mt-2">
+                    Digital Book Editor v7.0
+                </div>
+            </div>
+        </aside>
+
+        <!-- Mobile Overlay -->
+        <div id="mobile-overlay" class="fixed inset-0 bg-black/50 z-10 hidden md:hidden"></div>
+
+        <!-- Main Editor Area -->
+        <main class="flex-grow flex flex-col h-full relative overflow-hidden w-full bg-inherit">
+            
+            <!-- Top Title Navigation Bar -->
+            <header class="ui-panel h-14 border-b flex items-center justify-between px-4 sm:px-6 flex-shrink-0 z-20">
+                <div class="flex items-center gap-2">
+                    <!-- Back to Home Button -->
+                    <button id="back-home-btn" class="ui-button p-1.5 rounded-lg mr-2 border border-transparent hover:border-current transition" title="Back to Library">
+                        <i class="ph ph-house text-xl text-blue-600 dark:text-blue-400"></i>
+                    </button>
+                    
+                    <button id="open-sidebar-btn" class="md:hidden ui-button p-2 rounded-lg" aria-label="Open menu">
+                        <i class="ph ph-list text-xl"></i>
+                    </button>
+                    <div class="flex flex-col ml-2">
+                        <input type="text" id="book-title-input" class="bg-transparent font-semibold text-sm sm:text-base truncate max-w-[150px] sm:max-w-xs focus:outline-none focus:border-b border-blue-500" value="Untitled Book" readonly>
+                        <span id="save-status" class="text-[10px] opacity-50 font-medium">All changes saved locally</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <button id="toggle-edit-btn" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors shadow-sm">
+                        <i class="ph ph-pencil-simple"></i> <span class="hidden sm:inline" id="edit-btn-text">Edit Book</span>
+                    </button>
+                    <button id="download-pdf-btn" class="ui-button p-1.5 rounded-md text-sm border border-current opacity-70 hover:opacity-100 transition-colors" title="Download PDF">
+                        <i class="ph ph-file-pdf text-lg"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- MS Word Style Ribbon UI -->
+            <div id="ribbon-container" class="hidden flex-col bg-office-bg dark:bg-slate-900 border-b border-gray-300 dark:border-slate-700 z-10 flex-shrink-0 select-none shadow-sm transition-all">
+                
+                <!-- Ribbon Tabs -->
+                <div class="flex px-2 bg-white dark:bg-slate-950 border-b border-gray-200 dark:border-slate-800 text-xs sm:text-sm pt-1">
+                    <button class="ribbon-tab-btn px-4 py-1 font-medium text-blue-600 border-b-2 border-blue-600 bg-office-bg dark:bg-slate-900 rounded-t" data-target="tab-home">Home</button>
+                    <button class="ribbon-tab-btn px-4 py-1 font-medium text-gray-600 dark:text-gray-300 border-b-2 border-transparent hover:bg-gray-100 dark:hover:bg-slate-800 rounded-t transition" data-target="tab-insert">Insert</button>
+                    <button class="ribbon-tab-btn px-4 py-1 font-medium text-gray-600 dark:text-gray-300 border-b-2 border-transparent hover:bg-gray-100 dark:hover:bg-slate-800 rounded-t transition" data-target="tab-layout">Layout</button>
+                    <button class="ribbon-tab-btn px-4 py-1 font-medium text-gray-600 dark:text-gray-300 border-b-2 border-transparent hover:bg-gray-100 dark:hover:bg-slate-800 rounded-t transition" data-target="tab-review">Review</button>
+                    <button class="ribbon-tab-btn px-4 py-1 font-medium text-gray-600 dark:text-gray-300 border-b-2 border-transparent hover:bg-gray-100 dark:hover:bg-slate-800 rounded-t transition" data-target="tab-view">View</button>
+                    
+                    <!-- Contextual Tabs -->
+                    <div class="w-px h-6 bg-gray-300 dark:bg-slate-700 mx-2 self-center"></div>
+                    <!-- Table Tabs -->
+                    <button id="tab-btn-table-design" class="ribbon-tab-btn hidden px-4 py-1 font-medium text-purple-600 border-b-2 border-transparent hover:bg-gray-100 dark:hover:bg-slate-800 rounded-t transition contextual-tab" data-target="tab-table-design">Table Design</button>
+                    <button id="tab-btn-table-layout" class="ribbon-tab-btn hidden px-4 py-1 font-medium text-purple-600 border-b-2 border-transparent hover:bg-gray-100 dark:hover:bg-slate-800 rounded-t transition contextual-tab" data-target="tab-table-layout">Table Layout</button>
+                    <!-- Picture Tab -->
+                    <button id="tab-btn-picture-format" class="ribbon-tab-btn hidden px-4 py-1 font-medium text-pink-600 border-b-2 border-transparent hover:bg-gray-100 dark:hover:bg-slate-800 rounded-t transition contextual-tab" data-target="tab-picture-format">Picture Format</button>
+                </div>
+
+                <!-- Ribbon Panels -->
+                <!-- 1. HOME TAB -->
+                <div id="tab-home" class="ribbon-panel flex p-2 gap-4 overflow-x-auto min-h-[85px] items-center">
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full text-slate-700 dark:text-slate-200">
+                        <button id="ribbon-paste-btn" class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10">
+                            <i class="ph ph-clipboard-text text-2xl text-yellow-600"></i>
+                            <span class="text-[10px] mt-1 font-medium">Paste Text</span>
+                        </button>
+                    </div>
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 h-full text-slate-700 dark:text-slate-200">
+                        <div class="flex gap-1 mb-1">
+                            <select class="format-select border border-gray-300 dark:border-slate-600 rounded px-1 py-0.5 text-xs bg-white dark:bg-slate-800" data-command="fontName">
+                                <option value="Arial">Arial</option>
+                                <option value="Inter">Inter</option>
+                                <option value="Lora" selected>Lora (Serif)</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Times New Roman">Times New Roman</option>
+                            </select>
+                            <select class="format-select border border-gray-300 dark:border-slate-600 rounded px-1 py-0.5 text-xs bg-white dark:bg-slate-800" data-command="fontSize">
+                                <option value="1">10pt</option>
+                                <option value="2">13pt</option>
+                                <option value="3" selected>16pt</option>
+                                <option value="4">18pt</option>
+                                <option value="5">24pt</option>
+                                <option value="6">32pt</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-1 items-center">
+                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 font-bold w-6 text-center" data-command="bold" title="Bold">B</button>
+                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 italic w-6 text-center" data-command="italic" title="Italic">I</button>
+                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 underline w-6 text-center" data-command="underline" title="Underline">U</button>
+                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 line-through w-6 text-center" data-command="strikeThrough" title="Strikethrough">ab</button>
+                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-xs w-6 text-center" data-command="subscript" title="Subscript">x<sub>2</sub></button>
+                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-xs w-6 text-center" data-command="superscript" title="Superscript">x<sup>2</sup></button>
+                            <div class="w-px h-4 bg-gray-300 mx-1"></div>
+                            <label class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer flex items-center relative" title="Text Color">
+                                <i class="ph ph-text-a text-lg" id="icon-forecolor" style="border-bottom: 3px solid #000;"></i>
+                                <input type="color" class="format-color absolute opacity-0 w-0 h-0" data-command="foreColor" data-icon="icon-forecolor">
+                            </label>
+                            <label class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer flex items-center relative" title="Highlight Color">
+                                <i class="ph ph-highlighter text-lg" id="icon-hilite" style="border-bottom: 3px solid #ffff00;"></i>
+                                <input type="color" class="format-color absolute opacity-0 w-0 h-0" data-command="hiliteColor" data-icon="icon-hilite" value="#ffff00">
+                            </label>
+                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-pink-600" data-command="removeFormat" title="Clear Formatting">
+                                <i class="ph ph-eraser text-lg"></i>
+                            </button>
+                        </div>
+                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest">Font</div>
+                    </div>
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 h-full text-slate-700 dark:text-slate-200">
+                        <div class="flex gap-1">
+                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" data-command="insertUnorderedList" title="Bullets"><i class="ph ph-list-bullets text-lg"></i></button>
+                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" data-command="insertOrderedList" title="Numbering"><i class="ph ph-list-numbers text-lg"></i></button>
+                            <div class="w-px h-4 bg-gray-300 mx-1 self-center"></div>
+                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" data-command="outdent" title="Decrease Indent"><i class="ph ph-text-outdent text-lg"></i></button>
+                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" data-command="indent" title="Increase Indent"><i class="ph ph-text-indent text-lg"></i></button>
+                        </div>
+                        <div class="flex gap-1">
+                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" data-command="justifyLeft" title="Align Left"><i class="ph ph-text-align-left text-lg"></i></button>
+                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" data-command="justifyCenter" title="Align Center"><i class="ph ph-text-align-center text-lg"></i></button>
+                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" data-command="justifyRight" title="Align Right"><i class="ph ph-text-align-right text-lg"></i></button>
+                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" data-command="justifyFull" title="Justify"><i class="ph ph-text-align-justify text-lg"></i></button>
+                        </div>
+                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest">Paragraph</div>
+                    </div>
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 h-full text-slate-700 dark:text-slate-200 justify-between pb-1">
+                        <select class="format-select border border-gray-300 dark:border-slate-600 rounded p-1 text-sm bg-white dark:bg-slate-800 w-32 mt-1" data-command="formatBlock">
+                            <option value="P">Normal Text</option>
+                            <option value="H1">Heading 1</option>
+                            <option value="H2">Heading 2</option>
+                            <option value="H3">Heading 3</option>
+                            <option value="BLOCKQUOTE">Quote Block</option>
+                        </select>
+                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest">Styles</div>
+                    </div>
+                </div>
+
+                <!-- 2. INSERT TAB -->
+                <div id="tab-insert" class="ribbon-panel hidden flex p-2 gap-4 overflow-x-auto min-h-[85px] items-center text-slate-700 dark:text-slate-200">
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative">
+                        <button id="ribbon-add-section-btn" class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10">
+                            <i class="ph ph-file-plus text-2xl text-blue-600"></i>
+                            <span class="text-[10px] mt-1 font-medium">Blank Section</span>
+                        </button>
+                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest absolute bottom-0">Pages</div>
+                    </div>
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative">
+                        <button id="ribbon-insert-toc-btn" class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" title="Insert an auto-generated Table of Contents into the document">
+                            <i class="ph ph-list-dashes text-2xl text-purple-600"></i>
+                            <span class="text-[10px] mt-1 font-medium">Table of Contents</span>
+                        </button>
+                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest absolute bottom-0">Index</div>
+                    </div>
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative">
+                        <button onclick="window.insertTable()" class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-orange-600">
+                            <i class="ph ph-table text-2xl"></i>
+                            <span class="text-[10px] mt-1 font-medium">Table</span>
+                        </button>
+                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest absolute bottom-0">Tables</div>
+                    </div>
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative">
+                        <div class="flex gap-4">
+                            <label class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer">
+                                <i class="ph ph-image text-2xl text-green-600"></i>
+                                <span class="text-[10px] mt-1 font-medium">Book Cover</span>
+                                <input type="file" id="cover-upload" accept="image/*" class="hidden">
+                            </label>
+                            <label class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer">
+                                <i class="ph ph-image-square text-2xl text-blue-500"></i>
+                                <span class="text-[10px] mt-1 font-medium">Pictures</span>
+                                <input type="file" accept="image/*" class="hidden" onchange="window.insertInlineImage(this)">
+                            </label>
+                        </div>
+                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest absolute bottom-0">Illustrations</div>
+                    </div>
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative">
+                        <button id="ribbon-link-btn" class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10">
+                            <i class="ph ph-link text-2xl text-blue-500"></i>
+                            <span class="text-[10px] mt-1 font-medium">Hyperlink</span>
+                        </button>
+                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest absolute bottom-0">Links</div>
+                    </div>
+                </div>
+
+                <!-- 3. LAYOUT & DESIGN TAB -->
+                <div id="tab-layout" class="ribbon-panel hidden flex p-2 gap-4 overflow-x-auto min-h-[85px] items-center text-slate-700 dark:text-slate-200">
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative">
+                        <div class="flex flex-col items-center p-1">
+                            <select class="border border-gray-300 dark:border-slate-600 rounded p-1 text-sm bg-white dark:bg-slate-800" onchange="window.changeMargins(this.value)">
+                                <option value="max-w-3xl">Normal Margins</option>
+                                <option value="max-w-5xl">Narrow Margins</option>
+                                <option value="max-w-xl">Wide Margins</option>
+                            </select>
+                        </div>
+                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest absolute bottom-0">Page Setup</div>
+                    </div>
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative">
+                        <div class="flex gap-2 items-center p-1 mt-1">
+                            <button class="theme-btn w-6 h-6 rounded border-2 border-gray-300 shadow-sm transition-all" style="background-color: white;" data-theme="theme-light" title="Light Theme"></button>
+                            <button class="theme-btn w-6 h-6 rounded border-2 border-gray-300 shadow-sm transition-all" style="background-color: #f4ecd8;" data-theme="theme-sepia" title="Sepia Theme"></button>
+                            <button class="theme-btn w-6 h-6 rounded border-2 border-gray-300 shadow-sm transition-all" style="background-color: #0f172a;" data-theme="theme-dark" title="Dark Theme"></button>
+                        </div>
+                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest absolute bottom-0">Page Background</div>
+                    </div>
+                </div>
+
+                <!-- 4. REVIEW TAB -->
+                <div id="tab-review" class="ribbon-panel hidden flex p-2 gap-4 overflow-x-auto min-h-[85px] items-center text-slate-700 dark:text-slate-200">
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative">
+                        <div class="flex gap-2">
+                            <button class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" onclick="window.toggleSpellCheck()">
+                                <i class="ph ph-text-aa text-2xl text-blue-600"></i>
+                                <span class="text-[10px] mt-1 font-medium">Spelling</span>
+                            </button>
+                            <button class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" onclick="window.calculateWordCount()">
+                                <i class="ph ph-text-align-left text-2xl text-slate-600"></i>
+                                <span class="text-[10px] mt-1 font-medium">Word Count</span>
+                            </button>
+                        </div>
+                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest absolute bottom-0">Proofing</div>
+                    </div>
+                </div>
+
+                <!-- 5. VIEW TAB -->
+                <div id="tab-view" class="ribbon-panel hidden flex p-2 gap-4 overflow-x-auto min-h-[85px] items-center text-slate-700 dark:text-slate-200">
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative">
+                        <button class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" onclick="document.getElementById('toggle-edit-btn').click()">
+                            <i class="ph ph-book-open text-2xl text-blue-600"></i>
+                            <span class="text-[10px] mt-1 font-medium">Read Mode</span>
+                        </button>
+                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest absolute bottom-0">Views</div>
+                    </div>
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative">
+                        <div class="flex items-center gap-2 mt-1">
+                            <button class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" onclick="window.changeZoom(-1)"><i class="ph ph-magnifying-glass-minus text-lg"></i></button>
+                            <span id="zoom-level" class="text-xs font-semibold w-10 text-center">100%</span>
+                            <button class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" onclick="window.changeZoom(1)"><i class="ph ph-magnifying-glass-plus text-lg"></i></button>
+                        </div>
+                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest absolute bottom-0">Zoom</div>
+                    </div>
+                </div>
+
+                <!-- TABLE DESIGN TAB (Contextual) -->
+                <div id="tab-table-design" class="ribbon-panel hidden flex p-2 gap-4 overflow-x-auto min-h-[85px] items-center text-slate-700 dark:text-slate-200 bg-purple-50 dark:bg-purple-900/10 border-b border-purple-200 dark:border-purple-800">
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center h-full pb-4 relative px-2">
+                        <label class="flex items-center gap-2 text-xs cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 p-1 rounded">
+                            <input type="checkbox" id="cb-header-row" onchange="window.tableToggleHeader()" class="accent-purple-600"> Header Row
+                        </label>
+                        <label class="flex items-center gap-2 text-xs cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 p-1 rounded">
+                            <input type="checkbox" id="cb-banded-rows" onchange="window.tableToggleBanded()" class="accent-purple-600"> Banded Rows
+                        </label>
+                        <div class="text-[9px] text-center text-purple-600 dark:text-purple-400 font-medium uppercase mt-1 tracking-widest absolute bottom-0 w-full left-0">Style Options</div>
+                    </div>
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative px-2">
+                        <div class="flex gap-2 items-center mt-1">
+                            <label class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer" title="Shading">
+                                <i class="ph ph-paint-bucket text-2xl text-blue-600"></i>
+                                <input type="color" id="table-shading-color" class="opacity-0 absolute w-0 h-0">
+                            </label>
+                            <div class="w-px h-6 bg-gray-300 dark:bg-slate-600 mx-1"></div>
+                            <button class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 flex flex-col items-center" onclick="window.tableSetBorders('all')" title="All Borders">
+                                <i class="ph ph-border-all text-xl"></i>
+                            </button>
+                            <button class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 flex flex-col items-center" onclick="window.tableSetBorders('none')" title="No Borders">
+                                <i class="ph ph-border-none text-xl"></i>
+                            </button>
+                        </div>
+                        <div class="text-[9px] text-center text-purple-600 dark:text-purple-400 font-medium uppercase mt-1 tracking-widest absolute bottom-0 w-full left-0">Borders & Shading</div>
+                    </div>
+                </div>
+
+                <!-- TABLE LAYOUT TAB (Contextual) -->
+                <div id="tab-table-layout" class="ribbon-panel hidden flex p-2 gap-4 overflow-x-auto min-h-[85px] items-center text-slate-700 dark:text-slate-200 bg-purple-50 dark:bg-purple-900/10 border-b border-purple-200 dark:border-purple-800">
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative px-2">
+                        <div class="flex gap-1">
+                            <button class="flex flex-col items-center p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600" onclick="window.tableDeleteRow()" title="Delete Row">
+                                <i class="ph ph-rows text-lg"></i><span class="text-[9px]">Del Row</span>
+                            </button>
+                            <button class="flex flex-col items-center p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600" onclick="window.tableDeleteCol()" title="Delete Column">
+                                <i class="ph ph-columns text-lg"></i><span class="text-[9px]">Del Col</span>
+                            </button>
+                            <button class="flex flex-col items-center p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600" onclick="window.tableDeleteTable()" title="Delete Table">
+                                <i class="ph ph-table text-lg"></i><span class="text-[9px]">Del Table</span>
+                            </button>
+                        </div>
+                        <div class="text-[9px] text-center text-purple-600 dark:text-purple-400 font-medium uppercase mt-1 tracking-widest absolute bottom-0 w-full left-0">Delete</div>
+                    </div>
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative px-2">
+                        <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-blue-700 dark:text-blue-400">
+                            <button class="flex items-center gap-1 p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-xs" onclick="window.tableAddRow(false)"><i class="ph ph-arrow-line-up"></i> Insert Above</button>
+                            <button class="flex items-center gap-1 p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-xs" onclick="window.tableAddRow(true)"><i class="ph ph-arrow-line-down"></i> Insert Below</button>
+                            <button class="flex items-center gap-1 p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-xs" onclick="window.tableAddCol(false)"><i class="ph ph-arrow-line-left"></i> Insert Left</button>
+                            <button class="flex items-center gap-1 p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-xs" onclick="window.tableAddCol(true)"><i class="ph ph-arrow-line-right"></i> Insert Right</button>
+                        </div>
+                        <div class="text-[9px] text-center text-purple-600 dark:text-purple-400 font-medium uppercase mt-1 tracking-widest absolute bottom-0 w-full left-0">Rows & Columns</div>
+                    </div>
+                </div>
+
+                <!-- PICTURE FORMAT TAB (Contextual) -->
+                <div id="tab-picture-format" class="ribbon-panel hidden flex p-2 gap-4 overflow-x-auto min-h-[85px] items-center text-slate-700 dark:text-slate-200 bg-pink-50 dark:bg-pink-900/10 border-b border-pink-200 dark:border-pink-800">
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative px-2">
+                        <div class="flex gap-1 mt-1">
+                            <button class="px-2 py-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-xs border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800" onclick="window.imageSetSize('25%')">25%</button>
+                            <button class="px-2 py-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-xs border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800" onclick="window.imageSetSize('50%')">50%</button>
+                            <button class="px-2 py-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-xs border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800" onclick="window.imageSetSize('100%')">100%</button>
+                        </div>
+                        <div class="text-[9px] text-center text-pink-600 dark:text-pink-400 font-medium uppercase mt-1 tracking-widest absolute bottom-0 w-full left-0">Size</div>
+                    </div>
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative px-2">
+                        <div class="flex gap-1 mt-1">
+                            <button class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 flex flex-col items-center" onclick="window.imageSetAlign('left')" title="Align Left">
+                                <i class="ph ph-align-left text-xl text-blue-600"></i>
+                            </button>
+                            <button class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 flex flex-col items-center" onclick="window.imageSetAlign('center')" title="Align Center">
+                                <i class="ph ph-align-center text-xl text-blue-600"></i>
+                            </button>
+                            <button class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 flex flex-col items-center" onclick="window.imageSetAlign('right')" title="Align Right">
+                                <i class="ph ph-align-right text-xl text-blue-600"></i>
+                            </button>
+                        </div>
+                        <div class="text-[9px] text-center text-pink-600 dark:text-pink-400 font-medium uppercase mt-1 tracking-widest absolute bottom-0 w-full left-0">Arrange</div>
+                    </div>
+                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative px-2">
+                        <button class="flex flex-col items-center p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600" onclick="window.imageDelete()" title="Delete Image">
+                            <i class="ph ph-trash text-lg"></i><span class="text-[9px]">Delete</span>
+                        </button>
+                        <div class="text-[9px] text-center text-pink-600 dark:text-pink-400 font-medium uppercase mt-1 tracking-widest absolute bottom-0 w-full left-0">Adjust</div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Reading Area (Scrollable) -->
+            <div id="reading-area" class="flex-grow overflow-y-auto scroll-smooth relative bg-inherit">
+                <div class="w-full flex justify-center py-12 sm:py-20 transition-all duration-300">
+                    
+                    <!-- Dynamic Content Container -->
+                    <div id="book-container" class="prose prose-lg sm:prose-xl prose-slate font-serif w-full max-w-3xl px-6 transition-all duration-300 transform origin-top">
+                        
+                        <!-- Cover Image Display -->
+                        <div id="cover-display" class="hidden mb-12 flex justify-center relative group">
+                            <img id="cover-img" src="" alt="Book Cover" class="max-w-full h-auto max-h-[60vh] rounded shadow-lg object-contain">
+                            <button id="remove-cover-btn" class="absolute top-4 right-4 bg-red-500 text-white p-2 rounded-full hidden hover:bg-red-600 shadow-md group-hover:flex items-center justify-center transition-opacity" title="Remove Cover">
+                                <i class="ph ph-trash text-lg"></i>
+                            </button>
+                        </div>
+
+                        <!-- Editor / Reader DIV -->
+                        <div id="editor-content" class="transition-all duration-300">
+                            <!-- Content injected via JS -->
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Navigation Bar (Prev/Next/Progress) -->
+            <footer class="ui-panel border-t flex-shrink-0 relative">
+                <div class="absolute top-0 left-0 h-1 bg-blue-500 transition-all duration-300 w-0" id="reading-progress"></div>
+                
+                <div class="h-16 flex items-center justify-between px-4 sm:px-6 max-w-4xl mx-auto w-full">
+                    <button id="prev-btn" class="ui-button flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                        <i class="ph ph-arrow-left"></i>
+                        <span class="hidden sm:inline">Previous</span>
+                    </button>
+                    
+                    <div class="text-sm font-medium opacity-70" id="page-indicator">
+                        1 of 1
+                    </div>
+                    
+                    <button id="next-btn" class="ui-button flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                        <span class="hidden sm:inline">Next</span>
+                        <i class="ph ph-arrow-right"></i>
+                    </button>
+                </div>
+            </footer>
+
+        </main>
+    </div>
+
+    <!-- Hidden Print Container -->
+    <div id="print-container"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- Default Book Template Generator ---
+            function generateDefaultBook(title) {
+                return {
+                    id: 'book_' + Date.now() + Math.floor(Math.random()*1000),
+                    title: title || "Untitled Book",
+                    coverImage: null,
+                    chapters: [
+                        {
+                            id: 'chap_1',
+                            title: "Cover Page",
+                            content: `<div class="text-center mt-10 sm:mt-20 mb-32 flex flex-col items-center justify-center min-h-[50vh]">
+                                <h1 class="text-4xl sm:text-6xl font-bold mb-6 leading-tight">${title || "Untitled Book"}</h1>
+                                <p class="text-xl sm:text-2xl italic opacity-80 mb-12">A new digital masterpiece</p>
+                                <p class="text-lg font-sans uppercase tracking-widest font-semibold">Author Name</p>
+                            </div>`
+                        },
+                        {
+                            id: 'chap_2',
+                            title: "Chapter 1",
+                            content: `<h1>Chapter One</h1>
+                            <h2 class="mt-0 text-xl font-normal italic opacity-80 mb-10 border-b pb-8 border-current border-opacity-20">The Beginning</h2>
+                            <p class="lead text-xl mb-8">Start writing your story here. Click the "Edit Book" button in the top right to open the MS Word-style ribbon.</p>`
+                        }
+                    ]
+                };
+            }
+
+            // --- State Management ---
+            let libraryData = [];
+            let activeBookIndex = -1;
+            let bookData = null; // Pointer to libraryData[activeBookIndex]
+            
+            let currentChapterIndex = 0;
+            let isEditMode = false;
+            let saveTimeout;
+            let currentZoom = 100;
+            let savedSelectionRange = null; 
+            let currentModalAction = null;
+            
+            // Contextual Trackers
+            let currentTable = null;
+            let currentRow = null;
+            let currentCell = null;
+            let currentImage = null;
+
+            // --- DOM Elements ---
+            const homeView = document.getElementById('home-view');
+            const editorView = document.getElementById('editor-view');
+            const bookGrid = document.getElementById('book-grid');
+
+            const editorContent = document.getElementById('editor-content');
+            const tocList = document.getElementById('toc-list');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const pageIndicator = document.getElementById('page-indicator');
+            const readingProgress = document.getElementById('reading-progress');
+            
+            const toggleEditBtn = document.getElementById('toggle-edit-btn');
+            const ribbonContainer = document.getElementById('ribbon-container');
+            const bookTitleInput = document.getElementById('book-title-input');
+            const saveStatus = document.getElementById('save-status');
+            const sidebar = document.getElementById('sidebar');
+            const mobileOverlay = document.getElementById('mobile-overlay');
+            const backHomeBtn = document.getElementById('back-home-btn');
+            const modalOverlay = document.getElementById('custom-modal-overlay');
+
+            // --- Initialization ---
+            function init() {
+                setupTheme();
+                
+                // Load Library
+                const savedLibrary = localStorage.getItem('digitalLibraryData');
+                if (savedLibrary) {
+                    try {
+                        libraryData = JSON.parse(savedLibrary);
+                    } catch(e) { console.error("Error parsing library data."); }
+                }
+
+                // Fallback / Migration logic for users with the old single-book save format
+                if (!libraryData || libraryData.length === 0) {
+                    const legacyBook = JSON.parse(localStorage.getItem('digitalBookData'));
+                    if (legacyBook) {
+                        libraryData = [legacyBook];
+                    } else {
+                        // Brand new user
+                        libraryData = [generateDefaultBook("The Art of Digital Reading")];
+                    }
+                    localStorage.setItem('digitalLibraryData', JSON.stringify(libraryData));
+                }
+
+                renderHome();
+            }
+
+            // --- HOME VIEW LOGIC (LIBRARY) ---
+            function renderHome() {
+                bookGrid.innerHTML = '';
+                
+                // Create New Book Button
+                const createBtn = document.createElement('button');
+                createBtn.className = "flex flex-col items-center justify-center h-72 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition group";
+                createBtn.innerHTML = `<i class="ph ph-plus text-5xl text-gray-400 group-hover:text-blue-500 mb-3 transition"></i><span class="font-medium text-gray-500 group-hover:text-blue-500 transition text-lg">Create New Book</span>`;
+                createBtn.onclick = () => {
+                    const title = prompt("Enter book title:", "New Book");
+                    if(title && title.trim() !== "") {
+                        libraryData.push(generateDefaultBook(title.trim()));
+                        localStorage.setItem('digitalLibraryData', JSON.stringify(libraryData));
+                        renderHome();
+                    }
+                };
+                bookGrid.appendChild(createBtn);
+
+                // Render Existing Books
+                libraryData.forEach((book, idx) => {
+                    const card = document.createElement('div');
+                    card.className = "group relative flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-sm hover:shadow-md border border-gray-200 dark:border-slate-700 overflow-hidden transition h-72";
+                    
+                    const coverStyle = book.coverImage ? `background-image: url('${book.coverImage}'); background-size: cover; background-position: center;` : "background-color: #e2e8f0; dark:background-color: #334155;";
+                    
+                    card.innerHTML = `
+                        <div class="flex-grow relative cursor-pointer" style="${coverStyle}" onclick="window.openBook(${idx})">
+                            ${!book.coverImage ? `<div class="absolute inset-0 flex items-center justify-center opacity-30"><i class="ph ph-book-open text-6xl"></i></div>` : ''}
+                            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition"></div>
+                        </div>
+                        <div class="p-4 border-t border-gray-200 dark:border-slate-700 flex justify-between items-center bg-white dark:bg-slate-800">
+                            <div class="truncate font-semibold text-lg flex-grow pr-2" title="${book.title}">${book.title}</div>
+                            <button class="text-red-500 hover:text-red-700 p-2 opacity-0 group-hover:opacity-100 transition rounded-full hover:bg-red-50 dark:hover:bg-red-900/30" onclick="window.deleteLibraryBook(event, ${idx})" title="Delete Book"><i class="ph ph-trash text-xl"></i></button>
+                        </div>
+                    `;
+                    bookGrid.appendChild(card);
+                });
+            }
+
+            window.openBook = function(idx) {
+                activeBookIndex = idx;
+                bookData = libraryData[idx];
+                
+                // Hide home, show editor
+                homeView.classList.add('hidden');
+                editorView.classList.remove('hidden');
+                
+                // Reset editor state
+                currentChapterIndex = 0;
+                bookTitleInput.value = bookData.title;
+                
+                if(isEditMode) {
+                    // Force out of edit mode when opening a fresh book for safety
+                    toggleEditBtn.click(); 
+                }
+                
+                renderTOC();
+                loadChapter(0);
+            };
+
+            window.deleteLibraryBook = function(e, idx) {
+                e.stopPropagation();
+                if(confirm(`Are you sure you want to delete "${libraryData[idx].title}"? This cannot be undone.`)) {
+                    libraryData.splice(idx, 1);
+                    localStorage.setItem('digitalLibraryData', JSON.stringify(libraryData));
+                    renderHome();
+                }
+            };
+
+            backHomeBtn.addEventListener('click', () => {
+                saveLocally();
+                editorView.classList.add('hidden');
+                homeView.classList.remove('hidden');
+                renderHome();
+            });
+
+            // --- IMPORT / EXPORT LOGIC ---
+            document.getElementById('export-json-btn').addEventListener('click', () => {
+                if (!editorView.classList.contains('hidden')) saveLocally(); // Ensure we grab latest changes
+                
+                const dataStr = JSON.stringify(libraryData, null, 2);
+                const blob = new Blob([dataStr], {type: "application/json"});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `digital_library_backup_${new Date().toISOString().slice(0,10)}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+
+            document.getElementById('import-json-btn').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const importedData = JSON.parse(event.target.result);
+                        if(Array.isArray(importedData) && importedData.length > 0 && importedData[0].chapters) {
+                            if(confirm("Do you want to add these books to your existing library? (Click OK to Merge them, Cancel to Replace your current library)")) {
+                                libraryData = libraryData.concat(importedData);
+                            } else {
+                                libraryData = importedData;
+                            }
+                            localStorage.setItem('digitalLibraryData', JSON.stringify(libraryData));
+                            renderHome();
+                            alert("Library imported successfully!");
+                        } else {
+                            alert("Invalid JSON format. Expected an array of books.");
+                        }
+                    } catch(err) {
+                        alert("Error parsing JSON file.");
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = ''; // Reset input
+            });
+
+
+            // --- CORE EDITOR FUNCTIONS (Modified to hit libraryData) ---
+            function saveLocally() {
+                if(activeBookIndex > -1 && bookData) {
+                    if(isEditMode && bookData.chapters[currentChapterIndex]) {
+                        bookData.chapters[currentChapterIndex].content = editorContent.innerHTML;
+                    }
+                    bookData.title = bookTitleInput.value;
+                    
+                    libraryData[activeBookIndex] = bookData;
+                    localStorage.setItem('digitalLibraryData', JSON.stringify(libraryData));
+                    
+                    saveStatus.textContent = "Saved.";
+                    setTimeout(() => saveStatus.textContent = "All changes saved locally", 2000);
+                }
+            }
+
+            function autoSave() {
+                saveStatus.textContent = "Saving...";
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(saveLocally, 800);
+            }
+
+            window.moveChapter = function(index, direction) {
+                if (index + direction < 0 || index + direction >= bookData.chapters.length) return;
+                saveLocally(); 
+                
+                const temp = bookData.chapters[index];
+                bookData.chapters[index] = bookData.chapters[index + direction];
+                bookData.chapters[index + direction] = temp;
+
+                if (currentChapterIndex === index) currentChapterIndex = index + direction;
+                else if (currentChapterIndex === index + direction) currentChapterIndex = index;
+
+                saveLocally();
+                renderTOC();
+                loadChapter(currentChapterIndex);
+            };
+
+            function renderTOC() {
+                tocList.innerHTML = '';
+                if(!bookData) return;
+
+                bookData.chapters.forEach((chapter, index) => {
+                    const li = document.createElement('li');
+                    li.className = "flex flex-col group"; 
+                    
+                    const rowContainer = document.createElement('div');
+                    rowContainer.className = "flex items-center gap-1 w-full";
+
+                    const btn = document.createElement('button');
+                    btn.className = `flex-grow text-left px-3 py-2 rounded-lg text-sm transition-colors ui-button flex items-center gap-3 ${index === currentChapterIndex ? 'toc-active' : ''}`;
+                    
+                    const titleSpan = document.createElement('span');
+                    titleSpan.className = "truncate flex-grow font-semibold";
+                    titleSpan.textContent = chapter.title;
+                    
+                    btn.innerHTML = `<span class="w-5 h-5 flex items-center justify-center rounded-full border border-current opacity-50 text-[10px] flex-shrink-0">${index + 1}</span>`;
+                    btn.appendChild(titleSpan);
+                    
+                    btn.addEventListener('click', () => {
+                        saveLocally(); 
+                        loadChapter(index);
+                        if (window.innerWidth < 768) toggleSidebar();
+                    });
+
+                    rowContainer.appendChild(btn);
+
+                    if (isEditMode) {
+                        const controlsContainer = document.createElement('div');
+                        controlsContainer.className = "flex items-center bg-white dark:bg-slate-800 rounded shadow-sm border border-gray-300 dark:border-slate-600 p-0.5 ml-1 gap-0.5";
+
+                        const upBtn = document.createElement('button');
+                        upBtn.innerHTML = '<i class="ph ph-caret-up"></i>';
+                        upBtn.className = "p-1.5 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 disabled:opacity-20 transition-colors";
+                        upBtn.title = "Move Up";
+                        upBtn.disabled = index === 0;
+                        upBtn.onclick = (e) => { e.stopPropagation(); window.moveChapter(index, -1); };
+                        
+                        const downBtn = document.createElement('button');
+                        downBtn.innerHTML = '<i class="ph ph-caret-down"></i>';
+                        downBtn.className = "p-1.5 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 disabled:opacity-20 transition-colors";
+                        downBtn.title = "Move Down";
+                        downBtn.disabled = index === bookData.chapters.length - 1;
+                        downBtn.onclick = (e) => { e.stopPropagation(); window.moveChapter(index, 1); };
+
+                        const renameBtn = document.createElement('button');
+                        renameBtn.innerHTML = '<i class="ph ph-pencil-simple"></i>';
+                        renameBtn.className = "p-1.5 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 transition-colors";
+                        renameBtn.title = "Rename Section";
+                        renameBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            currentModalAction = { type: 'rename', index: index, chapter: chapter };
+                            document.getElementById('section-modal-title').textContent = "Rename Section";
+                            document.getElementById('section-title-input').value = chapter.title;
+                            openModal('section-modal');
+                            setTimeout(() => document.getElementById('section-title-input').focus(), 100);
+                        };
+
+                        const delBtn = document.createElement('button');
+                        delBtn.innerHTML = '<i class="ph ph-trash"></i>';
+                        delBtn.className = "p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 transition-colors";
+                        delBtn.title = "Delete Section";
+                        delBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            if(bookData.chapters.length === 1) return alert("You must have at least one section.");
+                            if(confirm(`Are you sure you want to delete "${chapter.title}"?`)) {
+                                bookData.chapters.splice(index, 1);
+                                if(currentChapterIndex >= bookData.chapters.length) currentChapterIndex--;
+                                saveLocally();
+                                renderTOC();
+                                loadChapter(currentChapterIndex);
+                            }
+                        };
+
+                        controlsContainer.appendChild(upBtn);
+                        controlsContainer.appendChild(downBtn);
+                        controlsContainer.appendChild(renameBtn);
+                        controlsContainer.appendChild(delBtn);
+                        rowContainer.appendChild(controlsContainer);
+                    }
+
+                    li.appendChild(rowContainer);
+
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = chapter.content;
+                    const headings = tempDiv.querySelectorAll('h1, h2');
+                    
+                    if (headings.length > 0) {
+                        const subList = document.createElement('ul');
+                        subList.className = "pl-6 space-y-1 mt-1 border-l border-gray-200 dark:border-slate-700 ml-4 mb-2";
+
+                        headings.forEach((h) => {
+                            const isH2 = h.tagName.toLowerCase() === 'h2';
+                            const hLi = document.createElement('li');
+                            const hBtn = document.createElement('button');
+                            
+                            hBtn.className = `text-left w-full text-xs py-1 px-2 rounded hover:bg-black/5 dark:hover:bg-white/5 opacity-70 hover:opacity-100 truncate transition-colors ${isH2 ? 'pl-4 text-[11px] opacity-60' : 'font-medium'}`;
+                            hBtn.textContent = h.textContent || 'Untitled';
+
+                            hBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                if (currentChapterIndex !== index) {
+                                    saveLocally();
+                                    loadChapter(index);
+                                }
+                                setTimeout(() => {
+                                    const editorHeadings = editorContent.querySelectorAll(h.tagName.toLowerCase());
+                                    const targetNode = Array.from(editorHeadings).find(el => el.textContent === h.textContent);
+                                    if (targetNode) targetNode.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }, 50);
+                            };
+
+                            hLi.appendChild(hBtn);
+                            subList.appendChild(hLi);
+                        });
+                        li.appendChild(subList);
+                    }
+
+                    tocList.appendChild(li);
+                });
+            }
+
+            function loadChapter(index) {
+                if (!bookData || index < 0 || index >= bookData.chapters.length) return;
+                currentChapterIndex = index;
+                
+                editorContent.innerHTML = bookData.chapters[index].content;
+                
+                const coverDisplay = document.getElementById('cover-display');
+                if (index === 0 && bookData.coverImage) {
+                    coverDisplay.classList.remove('hidden');
+                    document.getElementById('cover-img').src = bookData.coverImage;
+                    if(isEditMode) document.getElementById('remove-cover-btn').classList.remove('hidden');
+                    else document.getElementById('remove-cover-btn').classList.add('hidden');
+                } else {
+                    coverDisplay.classList.add('hidden');
+                }
+
+                prevBtn.disabled = currentChapterIndex === 0;
+                nextBtn.disabled = currentChapterIndex === bookData.chapters.length - 1;
+                pageIndicator.textContent = `${currentChapterIndex + 1} of ${bookData.chapters.length}`;
+                
+                const progressPercentage = bookData.chapters.length > 1 ? (currentChapterIndex / (bookData.chapters.length - 1)) * 100 : 100;
+                readingProgress.style.width = `${progressPercentage}%`;
+
+                document.getElementById('reading-area').scrollTop = 0;
+                clearContextuals();
+                renderTOC(); 
+            }
+
+            function clearContextuals() {
+                if(currentImage) currentImage.classList.remove('ring-4', 'ring-pink-500');
+                currentImage = null;
+                currentTable = null;
+                currentCell = null;
+                currentRow = null;
+                document.getElementById('tab-btn-table-design').classList.add('hidden');
+                document.getElementById('tab-btn-table-layout').classList.add('hidden');
+                document.getElementById('tab-btn-picture-format').classList.add('hidden');
+            }
+
+            // --- Modals Logic ---
+            function openModal(modalId) {
+                saveSelection();
+                modalOverlay.classList.remove('hidden');
+                modalOverlay.classList.add('flex');
+                document.getElementById('section-modal').classList.add('hidden');
+                document.getElementById('paste-modal').classList.add('hidden');
+                document.getElementById('link-modal').classList.add('hidden');
+                document.getElementById(modalId).classList.remove('hidden');
+            }
+
+            function closeModal() {
+                modalOverlay.classList.add('hidden');
+                modalOverlay.classList.remove('flex');
+            }
+
+            document.querySelectorAll('.modal-cancel-btn').forEach(btn => {
+                btn.addEventListener('click', () => { closeModal(); restoreSelection(); });
+            });
+
+            function saveSelection() {
+                if (window.getSelection) {
+                    const sel = window.getSelection();
+                    if (sel.getRangeAt && sel.rangeCount) savedSelectionRange = sel.getRangeAt(0);
+                }
+            }
+
+            function restoreSelection() {
+                if (savedSelectionRange) {
+                    if (window.getSelection) {
+                        const sel = window.getSelection();
+                        sel.removeAllRanges();
+                        sel.addRange(savedSelectionRange);
+                    }
+                } else {
+                    editorContent.focus();
+                }
+            }
+
+            document.getElementById('section-confirm-btn').addEventListener('click', () => {
+                const title = document.getElementById('section-title-input').value.trim();
+                if (title !== "") {
+                    if (currentModalAction === 'add') {
+                        saveLocally(); 
+                        const newIndex = bookData.chapters.length;
+                        bookData.chapters.push({
+                            id: 'chap_' + Date.now(),
+                            title: title,
+                            content: `<h1>${title}</h1><p>Start writing here...</p>`
+                        });
+                        saveLocally(); 
+                        renderTOC();
+                        loadChapter(newIndex); 
+                        if (window.innerWidth < 768 && !sidebar.classList.contains('-translate-x-full')) toggleSidebar();
+                    } else if (currentModalAction && currentModalAction.type === 'rename') {
+                        currentModalAction.chapter.title = title;
+                        saveLocally();
+                        renderTOC();
+                    }
+                    closeModal();
+                } else {
+                    alert("Title cannot be empty.");
+                }
+            });
+
+            function triggerAddSection() {
+                currentModalAction = 'add';
+                document.getElementById('section-modal-title').textContent = "Add New Section";
+                document.getElementById('section-title-input').value = '';
+                openModal('section-modal');
+                setTimeout(() => document.getElementById('section-title-input').focus(), 100);
+            }
+            document.getElementById('sidebar-add-chapter-btn').addEventListener('click', triggerAddSection);
+            document.getElementById('ribbon-add-section-btn').addEventListener('click', triggerAddSection);
+
+            document.getElementById('ribbon-paste-btn').addEventListener('click', () => {
+                document.getElementById('paste-content-area').value = '';
+                openModal('paste-modal');
+                setTimeout(() => document.getElementById('paste-content-area').focus(), 100);
+            });
+            document.getElementById('paste-confirm-btn').addEventListener('click', () => {
+                const textToPaste = document.getElementById('paste-content-area').value;
+                closeModal();
+                restoreSelection();
+                if(textToPaste) { document.execCommand('insertText', false, textToPaste); autoSave(); }
+            });
+
+            document.getElementById('ribbon-link-btn').addEventListener('click', () => {
+                document.getElementById('link-url-input').value = '';
+                openModal('link-modal');
+                setTimeout(() => document.getElementById('link-url-input').focus(), 100);
+            });
+            document.getElementById('link-confirm-btn').addEventListener('click', () => {
+                const linkUrl = document.getElementById('link-url-input').value.trim();
+                closeModal();
+                restoreSelection();
+                if(linkUrl) { document.execCommand('createLink', false, linkUrl); autoSave(); }
+            });
+
+            // --- Selection Tracking (Contextual Tabs) ---
+            editorContent.addEventListener('click', (e) => {
+                if (!isEditMode) return;
+                if (e.target.tagName === 'IMG') {
+                    currentImage = e.target;
+                    const picTabBtn = document.getElementById('tab-btn-picture-format');
+                    picTabBtn.classList.remove('hidden');
+                    document.querySelectorAll('#editor-content img').forEach(img => img.classList.remove('ring-4', 'ring-pink-500'));
+                    currentImage.classList.add('ring-4', 'ring-pink-500');
+                    if (!picTabBtn.classList.contains('text-pink-600')) picTabBtn.click();
+                } else {
+                    if (currentImage) currentImage.classList.remove('ring-4', 'ring-pink-500');
+                    currentImage = null;
+                    const picTabBtn = document.getElementById('tab-btn-picture-format');
+                    picTabBtn.classList.add('hidden');
+                    if (picTabBtn.classList.contains('text-pink-600')) document.querySelector('.ribbon-tab-btn[data-target="tab-home"]').click();
+                }
+            });
+
+            document.addEventListener('selectionchange', () => {
+                if (!isEditMode) return;
+                const sel = window.getSelection();
+                if (!sel.rangeCount) return;
+                let node = sel.anchorNode;
+                if (node.nodeType === 3) node = node.parentNode;
+                if (!editorContent.contains(node)) return;
+
+                if (currentImage && node.tagName !== 'IMG' && sel.type === 'Caret') {
+                    currentImage.classList.remove('ring-4', 'ring-pink-500');
+                    currentImage = null;
+                    document.getElementById('tab-btn-picture-format').classList.add('hidden');
+                    if (document.getElementById('tab-btn-picture-format').classList.contains('text-pink-600')) document.querySelector('.ribbon-tab-btn[data-target="tab-home"]').click();
+                }
+
+                const cell = node.closest('td, th');
+                const table = node.closest('table.editor-table');
+
+                if (table && editorContent.contains(table)) {
+                    currentTable = table;
+                    currentCell = cell;
+                    currentRow = cell ? cell.closest('tr') : null;
+                    document.getElementById('tab-btn-table-design').classList.remove('hidden');
+                    document.getElementById('tab-btn-table-layout').classList.remove('hidden');
+                    document.getElementById('cb-header-row').checked = table.querySelector('th') !== null;
+                    document.getElementById('cb-banded-rows').checked = table.classList.contains('banded-rows');
+                } else {
+                    currentTable = null; currentCell = null; currentRow = null;
+                    const designTab = document.getElementById('tab-btn-table-design');
+                    const layoutTab = document.getElementById('tab-btn-table-layout');
+                    designTab.classList.add('hidden');
+                    layoutTab.classList.add('hidden');
+                    if(designTab.classList.contains('text-purple-600') || layoutTab.classList.contains('text-purple-600')) {
+                        document.querySelector('.ribbon-tab-btn[data-target="tab-home"]').click();
+                    }
+                }
+            });
+
+            // --- Image Logic ---
+            window.imageSetSize = function(width) {
+                if(!currentImage) return;
+                currentImage.style.width = width;
+                currentImage.style.height = 'auto'; 
+                autoSave();
+            };
+            window.imageSetAlign = function(align) {
+                if(!currentImage) return;
+                if (align === 'center') {
+                    currentImage.style.display = 'block'; currentImage.style.marginLeft = 'auto'; currentImage.style.marginRight = 'auto'; currentImage.style.float = 'none';
+                } else if (align === 'left') {
+                    currentImage.style.display = 'inline-block'; currentImage.style.float = 'left'; currentImage.style.marginRight = '1.5rem'; currentImage.style.marginLeft = '0'; currentImage.style.marginBottom = '1rem';
+                } else if (align === 'right') {
+                    currentImage.style.display = 'inline-block'; currentImage.style.float = 'right'; currentImage.style.marginLeft = '1.5rem'; currentImage.style.marginRight = '0'; currentImage.style.marginBottom = '1rem';
+                }
+                autoSave();
+            };
+            window.imageDelete = function() {
+                if(!currentImage) return;
+                currentImage.remove();
+                currentImage = null;
+                const picTabBtn = document.getElementById('tab-btn-picture-format');
+                picTabBtn.classList.add('hidden');
+                if (picTabBtn.classList.contains('text-pink-600')) document.querySelector('.ribbon-tab-btn[data-target="tab-home"]').click();
+                autoSave();
+            };
+
+            // --- Table Logic ---
+            window.insertTable = function() {
+                let tableHTML = '<table class="editor-table banded-rows"><tbody>';
+                for(let i=0; i<3; i++) tableHTML += `<tr><td><br></td><td><br></td><td><br></td></tr>`;
+                tableHTML += '</tbody></table><p><br></p>';
+                document.execCommand('insertHTML', false, tableHTML);
+                autoSave();
+            };
+            window.tableAddRow = function(after) {
+                if(!currentRow) return;
+                const newRow = document.createElement('tr');
+                for(let i=0; i<currentRow.children.length; i++) newRow.appendChild(document.createElement('td')).innerHTML = '<br>';
+                if(after) currentRow.parentNode.insertBefore(newRow, currentRow.nextSibling);
+                else currentRow.parentNode.insertBefore(newRow, currentRow);
+                autoSave();
+            };
+            window.tableAddCol = function(after) {
+                if(!currentTable || !currentCell || !currentRow) return;
+                const cellIndex = Array.from(currentRow.children).indexOf(currentCell);
+                currentTable.querySelectorAll('tr').forEach(row => {
+                    const isHeader = row.children[0].tagName === 'TH' && row === currentTable.querySelectorAll('tr')[0];
+                    const newCell = document.createElement(isHeader ? 'th' : 'td');
+                    newCell.innerHTML = '<br>';
+                    if(after) {
+                        if (row.children[cellIndex].nextSibling) row.insertBefore(newCell, row.children[cellIndex].nextSibling);
+                        else row.appendChild(newCell);
+                    } else { row.insertBefore(newCell, row.children[cellIndex]); }
+                });
+                autoSave();
+            };
+            window.tableDeleteRow = function() {
+                if(!currentRow) return;
+                const tbody = currentRow.parentNode;
+                currentRow.remove();
+                if(tbody.children.length === 0) currentTable.remove();
+                autoSave();
+            };
+            window.tableDeleteCol = function() {
+                if(!currentTable || !currentCell || !currentRow) return;
+                const cellIndex = Array.from(currentRow.children).indexOf(currentCell);
+                const rows = currentTable.querySelectorAll('tr');
+                rows.forEach(row => { if(row.children[cellIndex]) row.children[cellIndex].remove(); });
+                if(rows[0] && rows[0].children.length === 0) currentTable.remove();
+                autoSave();
+            };
+            window.tableDeleteTable = function() { if(!currentTable) return; currentTable.remove(); autoSave(); };
+            window.tableToggleHeader = function() {
+                if(!currentTable) return;
+                const firstRow = currentTable.querySelector('tr');
+                if(!firstRow) return;
+                const isHeader = firstRow.children[0].tagName === 'TH';
+                Array.from(firstRow.children).forEach(cell => {
+                    const newCell = document.createElement(isHeader ? 'td' : 'th');
+                    newCell.innerHTML = cell.innerHTML; newCell.style.cssText = cell.style.cssText;
+                    firstRow.replaceChild(newCell, cell);
+                });
+                autoSave();
+            };
+            window.tableToggleBanded = function() { if(!currentTable) return; currentTable.classList.toggle('banded-rows'); autoSave(); };
+            window.tableSetBorders = function(type) {
+                if(!currentTable) return;
+                if(type === 'none') currentTable.classList.add('no-borders'); else currentTable.classList.remove('no-borders');
+                autoSave();
+            };
+            document.getElementById('table-shading-color').addEventListener('input', (e) => {
+                if(!currentCell) return;
+                currentCell.style.backgroundColor = e.target.value; autoSave();
+            });
+
+            // --- Edit Mode Toggle ---
+            toggleEditBtn.addEventListener('click', () => {
+                isEditMode = !isEditMode;
+                if (isEditMode) {
+                    document.body.classList.add('edit-mode-active');
+                    toggleEditBtn.classList.remove('bg-blue-600', 'text-white', 'hover:bg-blue-700');
+                    toggleEditBtn.classList.add('bg-gray-200', 'text-slate-800', 'dark:bg-slate-700', 'dark:text-white', 'hover:bg-gray-300');
+                    toggleEditBtn.innerHTML = `<i class="ph ph-check-circle"></i> <span class="hidden sm:inline">Done Editing</span>`;
+                    ribbonContainer.classList.remove('hidden'); ribbonContainer.classList.add('flex');
+                    document.getElementById('sidebar-add-chapter-btn').classList.remove('hidden');
+                    editorContent.setAttribute('contenteditable', 'true');
+                    bookTitleInput.removeAttribute('readonly');
+                    bookTitleInput.classList.remove('bg-transparent'); bookTitleInput.classList.add('bg-black/5', 'dark:bg-white/10', 'rounded', 'px-1');
+                    if(currentChapterIndex === 0 && bookData.coverImage) document.getElementById('remove-cover-btn').classList.remove('hidden');
+                } else {
+                    document.body.classList.remove('edit-mode-active');
+                    toggleEditBtn.classList.add('bg-blue-600', 'text-white', 'hover:bg-blue-700');
+                    toggleEditBtn.classList.remove('bg-gray-200', 'text-slate-800', 'dark:bg-slate-700', 'dark:text-white', 'hover:bg-gray-300');
+                    toggleEditBtn.innerHTML = `<i class="ph ph-pencil-simple"></i> <span class="hidden sm:inline">Edit Book</span>`;
+                    ribbonContainer.classList.add('hidden'); ribbonContainer.classList.remove('flex');
+                    document.getElementById('sidebar-add-chapter-btn').classList.add('hidden');
+                    editorContent.setAttribute('contenteditable', 'false');
+                    bookTitleInput.setAttribute('readonly', 'true');
+                    bookTitleInput.classList.add('bg-transparent'); bookTitleInput.classList.remove('bg-black/5', 'dark:bg-white/10', 'rounded', 'px-1');
+                    document.getElementById('remove-cover-btn').classList.add('hidden');
+                    clearContextuals();
+                    document.querySelector('.ribbon-tab-btn[data-target="tab-home"]').click();
+                    saveLocally(); 
+                }
+                renderTOC(); 
+            });
+
+            // --- Ribbon Switching ---
+            document.querySelectorAll('.ribbon-tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const targetId = btn.getAttribute('data-target');
+                    document.querySelectorAll('.ribbon-panel').forEach(panel => { panel.classList.add('hidden'); panel.classList.remove('flex'); });
+                    document.querySelectorAll('.ribbon-tab-btn').forEach(t => {
+                        t.classList.remove('text-blue-600', 'border-blue-600', 'bg-office-bg', 'dark:bg-slate-900', 'text-purple-600', 'border-purple-600', 'bg-purple-50', 'dark:bg-purple-900/10', 'text-pink-600', 'border-pink-600', 'bg-pink-50', 'dark:bg-pink-900/10');
+                        t.classList.add(t.classList.contains('contextual-tab') ? '' : 'text-gray-600');
+                        if(!t.classList.contains('contextual-tab')) t.classList.add('dark:text-gray-300');
+                        t.classList.add('border-transparent');
+                    });
+                    
+                    document.getElementById(targetId).classList.remove('hidden'); document.getElementById(targetId).classList.add('flex');
+                    if(targetId === 'tab-table-design' || targetId === 'tab-table-layout') btn.classList.add('text-purple-600', 'border-purple-600', 'bg-purple-50', 'dark:bg-purple-900/10');
+                    else if (targetId === 'tab-picture-format') btn.classList.add('text-pink-600', 'border-pink-600', 'bg-pink-50', 'dark:bg-pink-900/10');
+                    else btn.classList.add('text-blue-600', 'border-blue-600', 'bg-office-bg', 'dark:bg-slate-900');
+                    btn.classList.remove('text-gray-600', 'dark:text-gray-300', 'border-transparent');
+                });
+            });
+
+            // --- Ribbon Commands ---
+            editorContent.addEventListener('input', autoSave); bookTitleInput.addEventListener('input', autoSave);
+            document.querySelectorAll('.format-btn').forEach(btn => {
+                btn.addEventListener('mousedown', (e) => e.preventDefault());
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const command = btn.getAttribute('data-command');
+                    if (command === 'subscript' && document.queryCommandState('superscript')) document.execCommand('superscript', false, null);
+                    if (command === 'superscript' && document.queryCommandState('subscript')) document.execCommand('subscript', false, null);
+                    document.execCommand(command, false, btn.getAttribute('data-value') || null);
+                    autoSave();
+                });
+            });
+            document.querySelectorAll('.format-select').forEach(select => {
+                select.addEventListener('change', () => { document.execCommand(select.getAttribute('data-command'), false, select.value); autoSave(); });
+            });
+            document.querySelectorAll('.format-color').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const iconId = input.getAttribute('data-icon'); if(iconId) document.getElementById(iconId).style.borderBottomColor = e.target.value;
+                    document.execCommand(input.getAttribute('data-command'), false, e.target.value); autoSave();
+                });
+            });
+
+            // --- Tools ---
+            document.getElementById('ribbon-insert-toc-btn').addEventListener('click', () => {
+                editorContent.focus();
+                let tocHTML = `<div class="book-toc bg-gray-50 dark:bg-slate-800 p-6 rounded-lg my-6 border border-gray-200 dark:border-slate-700" contenteditable="false"><h2 class="mt-0 text-center mb-6 border-b border-gray-300 dark:border-slate-600 pb-4">Table of Contents</h2><ul class="list-none pl-0 space-y-2">`;
+                bookData.chapters.forEach((chap, idx) => {
+                    tocHTML += `<li class="font-bold text-lg mt-4 mb-2 text-slate-800 dark:text-slate-200">${idx + 1}. ${chap.title}</li>`;
+                    const tempDiv = document.createElement('div'); tempDiv.innerHTML = chap.content;
+                    const headings = tempDiv.querySelectorAll('h1, h2');
+                    if (headings.length > 0) {
+                        tocHTML += '<ul class="list-none pl-4 space-y-1">';
+                        headings.forEach(h => tocHTML += `<li class="text-sm text-slate-600 dark:text-slate-400 ${h.tagName.toLowerCase() === 'h2' ? 'pl-4 opacity-80' : 'font-medium'}">${h.textContent}</li>`);
+                        tocHTML += '</ul>';
+                    }
+                });
+                tocHTML += '</ul></div><p><br></p>';
+                document.execCommand('insertHTML', false, tocHTML); autoSave();
+            });
+
+            window.insertInlineImage = function(input) {
+                const file = input.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => { document.execCommand('insertImage', false, event.target.result); autoSave(); };
+                    reader.readAsDataURL(file);
+                }
+                input.value = ''; 
+            };
+
+            window.changeMargins = function(m) { const c = document.getElementById('book-container'); c.classList.remove('max-w-3xl','max-w-xl','max-w-5xl'); c.classList.add(m); };
+            window.changeZoom = function(dir) { currentZoom += dir * 10; currentZoom = Math.max(50, Math.min(200, currentZoom)); document.getElementById('zoom-level').textContent = currentZoom + '%'; document.getElementById('book-container').style.transform = `scale(${currentZoom/100})`; };
+            window.toggleSpellCheck = function() { const isOn = editorContent.getAttribute('spellcheck') === 'true'; editorContent.setAttribute('spellcheck', !isOn); alert("Spell check: " + (!isOn ? "ON" : "OFF")); };
+            window.calculateWordCount = function() { const w = (editorContent.innerText || editorContent.textContent).trim().split(/\s+/).filter(x=>x.length>0).length; alert(`Section: ${w} words\nChapters: ${bookData.chapters.length}`); };
+
+            document.getElementById('cover-upload').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const r = new FileReader();
+                    r.onload = (ev) => { bookData.coverImage = ev.target.result; saveLocally(); loadChapter(0); };
+                    r.readAsDataURL(file);
+                }
+            });
+            document.getElementById('remove-cover-btn').addEventListener('click', () => {
+                if(confirm("Remove cover image?")) { bookData.coverImage = null; saveLocally(); loadChapter(currentChapterIndex); }
+            });
+
+            // Navigation
+            prevBtn.addEventListener('click', () => { saveLocally(); loadChapter(currentChapterIndex - 1); });
+            nextBtn.addEventListener('click', () => { saveLocally(); loadChapter(currentChapterIndex + 1); });
+            document.addEventListener('keydown', (e) => {
+                if (isEditMode && document.activeElement === editorContent) return;
+                if (document.activeElement === bookTitleInput || !document.getElementById('custom-modal-overlay').classList.contains('hidden')) return;
+                if(editorView.classList.contains('hidden')) return; // Ignore arrows on home screen
+                if (e.key === 'ArrowRight') nextBtn.click();
+                if (e.key === 'ArrowLeft') prevBtn.click();
+            });
+
+            // Themes
+            const themeBtns = document.querySelectorAll('.theme-btn');
+            function setTheme(themeName) {
+                document.body.classList.remove('theme-light', 'theme-dark', 'theme-sepia');
+                document.body.classList.add(themeName);
+                themeBtns.forEach(btn => btn.classList.toggle('ring-2', btn.getAttribute('data-theme') === themeName));
+                themeBtns.forEach(btn => btn.classList.toggle('ring-blue-500', btn.getAttribute('data-theme') === themeName));
+                localStorage.setItem('book-editor-theme', themeName);
+            }
+            function setupTheme() {
+                setTheme(localStorage.getItem('book-editor-theme') || 'theme-light');
+                themeBtns.forEach(btn => btn.addEventListener('click', () => setTheme(btn.getAttribute('data-theme'))));
+            }
+
+            function toggleSidebar() {
+                sidebar.classList.toggle('-translate-x-full');
+                mobileOverlay.classList.toggle('hidden');
+            }
+            document.getElementById('open-sidebar-btn').addEventListener('click', toggleSidebar);
+            document.getElementById('close-sidebar-btn').addEventListener('click', toggleSidebar);
+            mobileOverlay.addEventListener('click', toggleSidebar);
+
+            // PDF Export
+            document.getElementById('download-pdf-btn').addEventListener('click', async () => {
+                saveLocally();
+                document.getElementById('loading-overlay').style.display = 'flex';
+
+                const printDiv = document.getElementById('print-container');
+                printDiv.innerHTML = ''; printDiv.style.display = 'block';
+                printDiv.className = 'prose prose-slate mx-auto font-serif p-8 bg-white text-black'; 
+                
+                printDiv.appendChild(Object.assign(document.createElement('div'), {innerHTML: `<h1 class="text-center mb-16">${bookData.title}</h1>`}));
+                if(bookData.coverImage) {
+                    const cv = document.createElement('div');
+                    cv.innerHTML = `<img src="${bookData.coverImage}" style="width:100%; max-height: 800px; object-fit: contain; margin-bottom: 50px;">`;
+                    cv.style.pageBreakAfter = 'always'; printDiv.appendChild(cv);
+                }
+
+                bookData.chapters.forEach((chap, idx) => {
+                    const cDiv = document.createElement('div'); cDiv.innerHTML = chap.content;
+                    if(idx < bookData.chapters.length - 1) cDiv.style.pageBreakAfter = 'always';
+                    printDiv.appendChild(cDiv);
+                });
+
+                try {
+                    await html2pdf().set({ margin: 0.75, filename: `${bookData.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, logging: false }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }).from(printDiv).save();
+                } catch (e) { alert("There was an error generating the PDF."); } 
+                finally { printDiv.style.display = 'none'; document.getElementById('loading-overlay').style.display = 'none'; }
+            });
+
+            init();
+        });
+    </script>
+</body>
+</html>
