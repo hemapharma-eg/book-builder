@@ -80,55 +80,64 @@
             --tw-prose-quotes: #5b4636;
         }
 
-        #editor-content:focus { outline: none; }
+        /* A4 Pagination Styles */
+        .a4-page {
+            width: 21cm;
+            min-height: 29.7cm;
+            padding: 2.54cm; /* 1 inch margins */
+            margin: 20px auto;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            position: relative;
+            outline: none;
+            overflow: hidden;
+            word-wrap: break-word;
+            box-sizing: border-box;
+            transition: transform 0.2s;
+        }
+
+        .theme-dark .a4-page {
+            background: #1e293b; /* Slate-800 roughly */
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            color: #e2e8f0;
+        }
+
+        .theme-sepia .a4-page {
+            background: #f4ecd8;
+            color: #433422;
+            box-shadow: 0 0 10px rgba(67, 52, 34, 0.1);
+        }
+
+        /* Adjust the editor-content to be a container */
+        #editor-content {
+            padding: 0 !important;
+            border: none !important;
+            background: transparent !important;
+            width: auto !important;
+            min-height: auto !important;
+        }
+
         .edit-mode-active #editor-content {
-            min-height: 50vh;
-            padding: 1.5rem;
-            border: 1px dashed rgba(156, 163, 175, 0.5);
-            border-radius: 0.5rem;
-            background: rgba(156, 163, 175, 0.05);
+            border: none !important;
+            background: transparent !important;
         }
 
-        /* Explicit fixes for Subscript and Superscript rendering */
-        #editor-content sub, .prose sub { vertical-align: sub !important; font-size: 0.75em !important; line-height: 0; }
-        #editor-content sup, .prose sup { vertical-align: super !important; font-size: 0.75em !important; line-height: 0; }
-        
-        /* Table Styles injected via Ribbon */
-        .editor-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; margin-bottom: 1.5rem; }
-        .editor-table td, .editor-table th { border: 1px solid #cbd5e1; padding: 0.5rem 0.75rem; min-width: 50px; transition: background-color 0.2s; }
-        .theme-dark .editor-table td, .theme-dark .editor-table th { border-color: #334155; }
-        .editor-table.banded-rows tr:nth-child(even) td { background-color: rgba(0,0,0,0.03); }
-        .theme-dark .editor-table.banded-rows tr:nth-child(even) td { background-color: rgba(255,255,255,0.03); }
-        .editor-table th { font-weight: 600; background-color: rgba(0,0,0,0.05); text-align: left; }
-        .theme-dark .editor-table th { background-color: rgba(255,255,255,0.05); }
-        .editor-table.no-borders td, .editor-table.no-borders th { border: none !important; }
-
-        /* General Image styling inside editor */
-        #editor-content img { max-width: 100%; height: auto; transition: box-shadow 0.2s; }
-
-        #print-container { display: none; }
-        html { scroll-behavior: smooth; }
-        
-        #loading-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.7);
-            z-index: 100;
-            color: white;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            font-size: 1.25rem;
+        /* Print styles for true A4 */
+        @media print {
+            body { background: white !important; color: black !important; padding: 0 !important; margin: 0 !important; }
+            #editor-view, #reading-area, #book-container { width: 100% !important; max-width: none !important; padding: 0 !important; margin: 0 !important; }
+            .a4-page {
+                box-shadow: none !important;
+                margin: 0 !important;
+                width: 21cm !important;
+                height: 29.7cm !important;
+                page-break-after: always;
+                break-after: page;
+            }
+            header, footer, aside, #ribbon-container, #toggle-edit-btn, #download-pdf-btn, #back-home-btn, #mobile-overlay, #loading-overlay { display: none !important; }
         }
 
-        .ribbon-panel::-webkit-scrollbar { height: 6px; }
-        .ribbon-panel::-webkit-scrollbar-track { background: transparent; }
-        .ribbon-panel::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        
-        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
-        .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
-        .sidebar-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        #editor-content:focus { outline: none; }
     </style>
 </head>
 <body class="theme-light font-sans transition-colors duration-300 h-screen overflow-hidden flex relative">
@@ -656,6 +665,10 @@
             let currentCell = null;
             let currentImage = null;
 
+            // Pagination Constants
+            const A4_HEIGHT_PX = 1123; // ~29.7cm at 96dpi
+            const PAGE_PADDING_BOTTOM = 40; // Safety margin
+
             // --- DOM Elements ---
             const homeView = document.getElementById('home-view');
             const editorView = document.getElementById('editor-view');
@@ -822,10 +835,11 @@
             });
 
 
-            // --- CORE EDITOR FUNCTIONS (Modified to hit libraryData) ---
+            // --- CORE EDITOR FUNCTIONS (Modified for Pagination) ---
             function saveLocally() {
                 if(activeBookIndex > -1 && bookData) {
                     if(isEditMode && bookData.chapters[currentChapterIndex]) {
+                        // Save the entire HTML of all pages
                         bookData.chapters[currentChapterIndex].content = editorContent.innerHTML;
                     }
                     bookData.title = bookTitleInput.value;
@@ -988,7 +1002,24 @@
                 if (!bookData || index < 0 || index >= bookData.chapters.length) return;
                 currentChapterIndex = index;
                 
-                editorContent.innerHTML = bookData.chapters[index].content;
+                let content = bookData.chapters[index].content;
+                
+                // If content is not wrapped in a4-page, wrap it
+                if (!content.includes('a4-page')) {
+                    content = `<div class="a4-page" contenteditable="${isEditMode}">${content}</div>`;
+                }
+                
+                editorContent.innerHTML = content;
+                
+                window.addEventListener('resize', paginateAll);
+
+                // Ensure all a4-pages have the correct contenteditable state
+                document.querySelectorAll('.a4-page').forEach(page => {
+                    page.setAttribute('contenteditable', isEditMode ? 'true' : 'false');
+                    attachPageListeners(page);
+                });
+
+                if (isEditMode) paginateAll();
                 
                 const coverDisplay = document.getElementById('cover-display');
                 if (index === 0 && bookData.coverImage) {
@@ -1286,7 +1317,8 @@
                     toggleEditBtn.innerHTML = `<i class="ph ph-check-circle"></i> <span class="hidden sm:inline">Done Editing</span>`;
                     ribbonContainer.classList.remove('hidden'); ribbonContainer.classList.add('flex');
                     document.getElementById('sidebar-add-chapter-btn').classList.remove('hidden');
-                    editorContent.setAttribute('contenteditable', 'true');
+                    // Update all pages to be editable
+                    document.querySelectorAll('.a4-page').forEach(page => page.setAttribute('contenteditable', 'true'));
                     bookTitleInput.removeAttribute('readonly');
                     bookTitleInput.classList.remove('bg-transparent'); bookTitleInput.classList.add('bg-black/5', 'dark:bg-white/10', 'rounded', 'px-1');
                     if(currentChapterIndex === 0 && bookData.coverImage) document.getElementById('remove-cover-btn').classList.remove('hidden');
@@ -1297,7 +1329,8 @@
                     toggleEditBtn.innerHTML = `<i class="ph ph-pencil-simple"></i> <span class="hidden sm:inline">Edit Book</span>`;
                     ribbonContainer.classList.add('hidden'); ribbonContainer.classList.remove('flex');
                     document.getElementById('sidebar-add-chapter-btn').classList.add('hidden');
-                    editorContent.setAttribute('contenteditable', 'false');
+                    // Update all pages to be read-only
+                    document.querySelectorAll('.a4-page').forEach(page => page.setAttribute('contenteditable', 'false'));
                     bookTitleInput.setAttribute('readonly', 'true');
                     bookTitleInput.classList.add('bg-transparent'); bookTitleInput.classList.remove('bg-black/5', 'dark:bg-white/10', 'rounded', 'px-1');
                     document.getElementById('remove-cover-btn').classList.add('hidden');
@@ -1338,11 +1371,16 @@
                     if (command === 'subscript' && document.queryCommandState('superscript')) document.execCommand('superscript', false, null);
                     if (command === 'superscript' && document.queryCommandState('subscript')) document.execCommand('subscript', false, null);
                     document.execCommand(command, false, btn.getAttribute('data-value') || null);
+                    paginateAll(); // Trigger pagination after formatting
                     autoSave();
                 });
             });
             document.querySelectorAll('.format-select').forEach(select => {
-                select.addEventListener('change', () => { document.execCommand(select.getAttribute('data-command'), false, select.value); autoSave(); });
+                select.addEventListener('change', () => { 
+                    document.execCommand(select.getAttribute('data-command'), false, select.value); 
+                    paginateAll(); // Trigger pagination
+                    autoSave(); 
+                });
             });
             document.querySelectorAll('.format-color').forEach(input => {
                 input.addEventListener('input', (e) => {
@@ -1396,15 +1434,182 @@
                 if(confirm("Remove cover image?")) { bookData.coverImage = null; saveLocally(); loadChapter(currentChapterIndex); }
             });
 
+            // --- Pagination Engine ---
+            function createPage() {
+                const page = document.createElement('div');
+                page.className = 'a4-page';
+                page.setAttribute('contenteditable', isEditMode ? 'true' : 'false');
+                attachPageListeners(page);
+                return page;
+            }
+
+            function attachPageListeners(page) {
+                page.addEventListener('input', () => {
+                    autoSave();
+                    paginateAll();
+                });
+                page.addEventListener('keydown', handlePageKeyDown);
+            }
+
+            function handlePageKeyDown(e) {
+                const page = e.currentTarget;
+                
+                // Ctrl + Enter: Page Break
+                if (e.ctrlKey && e.key === 'Enter') {
+                    e.preventDefault();
+                    insertPageBreak(page);
+                    return;
+                }
+
+                // Standard Enter: Pagination check
+                if (e.key === 'Enter') {
+                    setTimeout(paginateAll, 10);
+                }
+
+                // Backspace at the start of a page
+                if (e.key === 'Backspace') {
+                    const sel = window.getSelection();
+                    if (sel.anchorOffset === 0 && sel.anchorNode === page.firstChild) {
+                        const prevPage = page.previousElementSibling;
+                        if (prevPage && prevPage.classList.contains('a4-page')) {
+                            e.preventDefault();
+                            mergePages(prevPage, page);
+                        }
+                    }
+                }
+            }
+
+            function insertPageBreak(currentPage) {
+                const sel = window.getSelection();
+                if (!sel.rangeCount) return;
+                const range = sel.getRangeAt(0);
+                
+                // Split the content at the cursor
+                const nextPage = createPage();
+                editorContent.insertBefore(nextPage, currentPage.nextSibling);
+                
+                // Move everything after the cursor to the new page
+                const afterRange = document.createRange();
+                afterRange.setStart(range.endContainer, range.endOffset);
+                afterRange.setEndAfter(currentPage.lastChild);
+                
+                const frag = afterRange.extractContents();
+                nextPage.appendChild(frag);
+                
+                // Focus the start of the next page
+                nextPage.focus();
+                const newRange = document.createRange();
+                newRange.setStart(nextPage, 0);
+                newRange.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(newRange);
+                
+                paginateAll();
+                autoSave();
+            }
+
+            function mergePages(prevPage, currentPage) {
+                const content = currentPage.innerHTML;
+                if (content === '<br>' || content === '') {
+                    currentPage.remove();
+                    focusAtEnd(prevPage);
+                } else {
+                    // Move contents to prev page if possible, or just focus end
+                    focusAtEnd(prevPage);
+                }
+                paginateAll();
+            }
+
+            function focusAtEnd(el) {
+                el.focus();
+                const range = document.createRange();
+                range.selectNodeContents(el);
+                range.collapse(false);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
+
+            function paginateAll() {
+                const pages = Array.from(editorContent.querySelectorAll('.a4-page'));
+                for (let i = 0; i < pages.length; i++) {
+                    const page = pages[i];
+                    
+                    // 1. Content Extraction (Check Overflow)
+                    if (page.scrollHeight > A4_HEIGHT_PX) {
+                        let nextPage = pages[i+1];
+                        if (!nextPage) {
+                            nextPage = createPage();
+                            editorContent.appendChild(nextPage);
+                            pages.push(nextPage);
+                        }
+                        moveOverflowToNext(page, nextPage);
+                    }
+                }
+                
+                // Clean up empty trailing pages (except the first)
+                const allPages = editorContent.querySelectorAll('.a4-page');
+                allPages.forEach((p, idx) => {
+                    if (idx > 0 && p.innerHTML.trim() === '' && !p.isSameNode(document.activeElement)) {
+                        p.remove();
+                    }
+                });
+            }
+
+            function moveOverflowToNext(currentPage, nextPage) {
+                const children = Array.from(currentPage.childNodes);
+                const overflowNodes = [];
+                
+                // Temporarily detach to measure
+                for (let i = children.length - 1; i >= 0; i--) {
+                    const node = children[i];
+                    if (currentPage.scrollHeight > A4_HEIGHT_PX) {
+                        overflowNodes.unshift(node);
+                        currentPage.removeChild(node);
+                    } else {
+                        break;
+                    }
+                }
+                
+                if (overflowNodes.length > 0) {
+                    // Prepend to next page to maintain order
+                    const firstChild = nextPage.firstChild;
+                    overflowNodes.forEach(node => {
+                        if (firstChild) nextPage.insertBefore(node, firstChild);
+                        else nextPage.appendChild(node);
+                    });
+                }
+            }
+
+            // --- Ribbon Command Interceptor ---
+            // Ensure document.execCommand targets the active page
+            function execInEditor(command, val = null) {
+                const activePage = document.activeElement;
+                if (activePage && activePage.classList.contains('a4-page')) {
+                    document.execCommand(command, false, val);
+                    paginateAll();
+                    autoSave();
+                } else {
+                    // Focus the first page if none is focused
+                    const firstPage = editorContent.querySelector('.a4-page');
+                    if (firstPage) {
+                        firstPage.focus();
+                        document.execCommand(command, false, val);
+                        paginateAll();
+                        autoSave();
+                    }
+                }
+            }
             // Navigation
             prevBtn.addEventListener('click', () => { saveLocally(); loadChapter(currentChapterIndex - 1); });
             nextBtn.addEventListener('click', () => { saveLocally(); loadChapter(currentChapterIndex + 1); });
+
             document.addEventListener('keydown', (e) => {
-                if (isEditMode && document.activeElement === editorContent) return;
+                if (isEditMode && document.activeElement && document.activeElement.classList.contains('a4-page')) return;
                 if (document.activeElement === bookTitleInput || !document.getElementById('custom-modal-overlay').classList.contains('hidden')) return;
-                if(editorView.classList.contains('hidden')) return; // Ignore arrows on home screen
-                if (e.key === 'ArrowRight') nextBtn.click();
-                if (e.key === 'ArrowLeft') prevBtn.click();
+                
+                if (e.key === 'ArrowLeft' && !prevBtn.disabled) prevBtn.click();
+                if (e.key === 'ArrowRight' && !nextBtn.disabled) nextBtn.click();
             });
 
             // Themes
