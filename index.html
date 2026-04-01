@@ -1749,7 +1749,15 @@
                 input.value = ''; 
             };
 
-            window.changeMargins = function(m) { const c = document.getElementById('book-container'); c.classList.remove('max-w-3xl','max-w-xl','max-w-5xl'); c.classList.add(m); };
+            window.changeMargins = function(m) {
+                document.querySelectorAll('.a4-page').forEach(p => {
+                    if (m === 'narrow') p.style.padding = '1.27cm';
+                    else if (m === 'wide') p.style.padding = '5.08cm';
+                    else p.style.padding = '2.54cm';
+                });
+                paginateAll();
+                autoSave();
+            };
             window.changeZoom = function(dir) { currentZoom += dir * 10; currentZoom = Math.max(50, Math.min(200, currentZoom)); document.getElementById('zoom-level').textContent = currentZoom + '%'; document.getElementById('book-container').style.transform = `scale(${currentZoom/100})`; };
             window.toggleSpellCheck = function() { const isOn = editorContent.getAttribute('spellcheck') === 'true'; editorContent.setAttribute('spellcheck', !isOn); alert("Spell check: " + (!isOn ? "ON" : "OFF")); };
             window.calculateWordCount = function() { const w = (editorContent.innerText || editorContent.textContent).trim().split(/\s+/).filter(x=>x.length>0).length; alert(`Section: ${w} words\nChapters: ${bookData.chapters.length}`); };
