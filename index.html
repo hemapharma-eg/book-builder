@@ -49,21 +49,24 @@
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
 
     <style>
-        body.theme-light { @apply bg-white text-slate-900; }
-        body.theme-dark { @apply bg-slate-900 text-slate-200; }
-        body.theme-sepia { @apply bg-sepia-bg text-sepia-text; }
+        body.theme-light { background-color: #ffffff; color: #0f172a; }
+        body.theme-dark { background-color: #0f172a; color: #e2e8f0; }
+        body.theme-sepia { background-color: #f4ecd8; color: #433422; }
 
-        body.theme-light .ui-panel { @apply bg-slate-50 border-slate-200; }
-        body.theme-dark .ui-panel { @apply bg-slate-950 border-slate-800 text-slate-300; }
-        body.theme-sepia .ui-panel { @apply bg-sepia-sidebar border-sepia-border text-sepia-text; }
+        body.theme-light .ui-panel { background-color: #f8fafc; border-color: #e2e8f0; }
+        body.theme-dark .ui-panel { background-color: #020617; border-color: #1e293b; color: #cbd5e1; }
+        body.theme-sepia .ui-panel { background-color: #ece3ce; border-color: #e0d5ba; color: #433422; }
 
-        body.theme-light .ui-button { @apply hover:bg-slate-200 text-slate-700; }
-        body.theme-dark .ui-button { @apply hover:bg-slate-800 text-slate-300; }
-        body.theme-sepia .ui-button { @apply hover:bg-[#e0d5ba] text-[#433422]; }
+        body.theme-light .ui-button { color: #334155; }
+        body.theme-light .ui-button:hover { background-color: #e2e8f0; }
+        body.theme-dark .ui-button { color: #cbd5e1; }
+        body.theme-dark .ui-button:hover { background-color: #1e293b; }
+        body.theme-sepia .ui-button { color: #433422; }
+        body.theme-sepia .ui-button:hover { background-color: #e0d5ba; }
 
-        body.theme-light .toc-active { @apply bg-blue-100 text-blue-700 font-medium; }
-        body.theme-dark .toc-active { @apply bg-blue-900/50 text-blue-300 font-medium; }
-        body.theme-sepia .toc-active { @apply bg-[#dfd3b6] text-[#433422] font-semibold; }
+        body.theme-light .toc-active { background-color: #dbeafe; color: #1d4ed8; font-weight: 500; }
+        body.theme-dark .toc-active { background-color: rgba(30, 58, 138, 0.5); color: #93c5fd; font-weight: 500; }
+        body.theme-sepia .toc-active { background-color: #dfd3b6; color: #433422; font-weight: 600; }
 
         body.theme-dark .prose {
             --tw-prose-body: #e2e8f0;
@@ -81,25 +84,119 @@
         }
 
         /* A4 Pagination Styles */
+        /* Ribbon & Styling Improvements */
+        .ribbon-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 0.5rem;
+            border-right: 1px solid #e2e8f0;
+            height: 100%;
+            padding-top: 0.25rem;
+            padding-bottom: 0.25rem;
+        }
+        .theme-dark .ribbon-group { border-right-color: #1e293b; }
+        .ribbon-group:last-child { border-right: none; }
+        
+        .ribbon-group-label {
+            font-size: 10px;
+            color: #64748b;
+            margin-top: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: -0.025em;
+        }
+        .theme-dark .ribbon-group-label { color: #94a3b8; }
+
+        .ribbon-btn-large {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            transition-property: color, background-color, border-color;
+            transition-duration: 200ms;
+            gap: 0.25rem;
+            min-width: 64px;
+        }
+        .ribbon-btn-large:hover { background-color: #e2e8f0; }
+        .theme-dark .ribbon-btn-large:hover { background-color: #334155; }
+
+        .ribbon-btn-small {
+            display: flex;
+            align-items: center;
+            padding: 0.375rem;
+            border-radius: 0.25rem;
+            transition-property: color, background-color, border-color;
+            transition-duration: 200ms;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            width: 100%;
+        }
+        .ribbon-btn-small:hover { background-color: #e2e8f0; }
+        .theme-dark .ribbon-btn-small:hover { background-color: #334155; }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.25rem;
+            padding: 0.5rem;
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.25rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            position: absolute;
+            z-index: 50;
+            margin-top: 0.25rem;
+        }
+        .theme-dark .gallery-grid { background-color: #1e293b; border-color: #334155; }
+
+        .ribbon-panel {
+            height: 110px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            display: none; /* Controlled by JS */
+        }
+        .ribbon-panel.active { display: flex; }
+
         .a4-page {
-            width: 21cm;
-            min-height: 29.7cm;
-            padding: 2.54cm; /* 1 inch margins */
-            margin: 20px auto;
-            background: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
             position: relative;
+            background: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 210mm;
+            min-height: 297mm;
+            padding: 2.54cm; /* 1 inch margins default */
+            margin: 20px auto;
             outline: none;
             overflow: hidden;
-            word-wrap: break-word;
+            display: block;
             box-sizing: border-box;
-            transition: transform 0.2s;
+            transition: all 0.3s ease;
         }
+        .a4-page[data-grid="true"] {
+            background-image: linear-gradient(to right, #f1f5f9 1px, transparent 1px), linear-gradient(to bottom, #f1f5f9 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .a4-page::after {
+            content: attr(data-watermark);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 8rem;
+            color: rgba(0,0,0,0.03);
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 0;
+        }
+        .ruler-v { position: absolute; left: 0; top: 0; bottom: 0; width: 24px; border-right: 1px solid #e2e8f0; display: none; background: repeating-linear-gradient(to bottom, #94a3b8 0, #94a3b8 1px, transparent 1px, transparent 1cm); }
+        .ruler-h { position: absolute; top: 0; left: 0; right: 0; height: 24px; border-bottom: 1px solid #e2e8f0; display: none; background: repeating-linear-gradient(to right, #94a3b8 0, #94a3b8 1px, transparent 1px, transparent 1cm); }
+        .theme-dark .ruler-v, .theme-dark .ruler-h { border-color: #1e293b; }
 
         .theme-dark .a4-page {
-            background: #1e293b; /* Slate-800 roughly */
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
-            color: #e2e8f0;
+            background: #1e293b; 
+            color: white;
         }
 
         .theme-sepia .a4-page {
@@ -279,200 +376,358 @@
                 
                 <!-- Ribbon Tabs -->
                 <div class="flex px-2 bg-white dark:bg-slate-950 border-b border-gray-200 dark:border-slate-800 text-xs sm:text-sm pt-1">
-                    <button class="ribbon-tab-btn px-4 py-1 font-medium text-blue-600 border-b-2 border-blue-600 bg-office-bg dark:bg-slate-900 rounded-t" data-target="tab-home">Home</button>
-                    <button class="ribbon-tab-btn px-4 py-1 font-medium text-gray-600 dark:text-gray-300 border-b-2 border-transparent hover:bg-gray-100 dark:hover:bg-slate-800 rounded-t transition" data-target="tab-insert">Insert</button>
-                    <button class="ribbon-tab-btn px-4 py-1 font-medium text-gray-600 dark:text-gray-300 border-b-2 border-transparent hover:bg-gray-100 dark:hover:bg-slate-800 rounded-t transition" data-target="tab-layout">Layout</button>
-                    <button class="ribbon-tab-btn px-4 py-1 font-medium text-gray-600 dark:text-gray-300 border-b-2 border-transparent hover:bg-gray-100 dark:hover:bg-slate-800 rounded-t transition" data-target="tab-review">Review</button>
-                    <button class="ribbon-tab-btn px-4 py-1 font-medium text-gray-600 dark:text-gray-300 border-b-2 border-transparent hover:bg-gray-100 dark:hover:bg-slate-800 rounded-t transition" data-target="tab-view">View</button>
+                <!-- Left Section: Search & Main Tabs -->
+                <div class="flex items-center space-x-2 mr-4 min-w-fit">
+                    <div class="flex flex-col items-center group cursor-pointer">
+                        <div class="w-10 h-10 bg-blue-600 rounded flex items-center justify-center text-white mb-1 shadow-lg group-hover:bg-blue-700 transition-colors">
+                            <i class="ph-bold ph-book-open"></i>
+                        </div>
+                    </div>
+                    <div class="h-8 w-px bg-slate-400/30 mx-2"></div>
+                </div>
+
+                <!-- Tabs Navigation -->
+                <div class="flex items-end space-x-1 h-full pt-2 overflow-x-auto no-scrollbar">
+                    <button class="ribbon-tab-btn px-4 py-2 text-sm font-medium transition-all relative border-b-2 border-transparent hover:bg-black/5 dark:hover:bg-white/10" data-target="tab-home">
+                        Home
+                    </button>
+                    <button class="ribbon-tab-btn px-4 py-2 text-sm font-medium transition-all relative border-b-2 border-transparent hover:bg-black/5 dark:hover:bg-white/10" data-target="tab-insert">
+                        Insert
+                    </button>
+                    <button class="ribbon-tab-btn px-4 py-2 text-sm font-medium transition-all relative border-b-2 border-transparent hover:bg-black/5 dark:hover:bg-white/10" data-target="tab-design">
+                        Design
+                    </button>
+                    <button class="ribbon-tab-btn px-4 py-2 text-sm font-medium transition-all relative border-b-2 border-transparent hover:bg-black/5 dark:hover:bg-white/10" data-target="tab-layout">
+                        Layout
+                    </button>
+                    <button class="ribbon-tab-btn px-4 py-2 text-sm font-medium transition-all relative border-b-2 border-transparent hover:bg-black/5 dark:hover:bg-white/10" data-target="tab-review">
+                        Review
+                    </button>
+                    <button class="ribbon-tab-btn px-4 py-2 text-sm font-medium transition-all relative border-b-2 border-transparent hover:bg-black/5 dark:hover:bg-white/10" data-target="tab-view">
+                        View
+                    </button>
                     
                     <!-- Contextual Tabs -->
-                    <div class="w-px h-6 bg-gray-300 dark:bg-slate-700 mx-2 self-center"></div>
-                    <!-- Table Tabs -->
-                    <button id="tab-btn-table-design" class="ribbon-tab-btn hidden px-4 py-1 font-medium text-purple-600 border-b-2 border-transparent hover:bg-gray-100 dark:hover:bg-slate-800 rounded-t transition contextual-tab" data-target="tab-table-design">Table Design</button>
-                    <button id="tab-btn-table-layout" class="ribbon-tab-btn hidden px-4 py-1 font-medium text-purple-600 border-b-2 border-transparent hover:bg-gray-100 dark:hover:bg-slate-800 rounded-t transition contextual-tab" data-target="tab-table-layout">Table Layout</button>
-                    <!-- Picture Tab -->
-                    <button id="tab-btn-picture-format" class="ribbon-tab-btn hidden px-4 py-1 font-medium text-pink-600 border-b-2 border-transparent hover:bg-gray-100 dark:hover:bg-slate-800 rounded-t transition contextual-tab" data-target="tab-picture-format">Picture Format</button>
+                    <div id="tab-btn-table-design" class="hidden flex items-end space-x-1">
+                        <button class="ribbon-tab-btn px-4 py-2 text-sm font-medium text-purple-600 dark:text-purple-400 relative border-b-2 border-transparent hover:bg-purple-50 dark:hover:bg-purple-900/20" data-target="tab-table-design">
+                            Table Design
+                        </button>
+                    </div>
+                    <div id="tab-btn-table-layout" class="hidden flex items-end space-x-1">
+                        <button class="ribbon-tab-btn px-4 py-2 text-sm font-medium text-purple-600 dark:text-purple-400 relative border-b-2 border-transparent hover:bg-purple-50 dark:hover:bg-purple-900/20" data-target="tab-table-layout">
+                            Layout
+                        </button>
+                    </div>
+                    <div id="tab-btn-picture-format" class="hidden flex items-end space-x-1">
+                        <button class="ribbon-tab-btn px-4 py-2 text-sm font-medium text-pink-600 dark:text-pink-400 relative border-b-2 border-transparent hover:bg-pink-50 dark:hover:bg-pink-900/20" data-target="tab-picture-format">
+                            Picture Format
+                        </button>
+                    </div>
+                </div>
                 </div>
 
                 <!-- Ribbon Panels -->
                 <!-- 1. HOME TAB -->
-                <div id="tab-home" class="ribbon-panel flex p-2 gap-4 overflow-x-auto min-h-[85px] items-center">
-                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full text-slate-700 dark:text-slate-200">
-                        <button id="ribbon-paste-btn" class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10">
-                            <i class="ph ph-clipboard-text text-2xl text-yellow-600"></i>
-                            <span class="text-[10px] mt-1 font-medium">Paste Text</span>
-                        </button>
-                    </div>
-                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 h-full text-slate-700 dark:text-slate-200">
-                        <div class="flex gap-1 mb-1">
-                            <select class="format-select border border-gray-300 dark:border-slate-600 rounded px-1 py-0.5 text-xs bg-white dark:bg-slate-800" data-command="fontName">
-                                <option value="Arial">Arial</option>
-                                <option value="Inter">Inter</option>
-                                <option value="Lora" selected>Lora (Serif)</option>
-                                <option value="Georgia">Georgia</option>
-                                <option value="Times New Roman">Times New Roman</option>
-                            </select>
-                            <select class="format-select border border-gray-300 dark:border-slate-600 rounded px-1 py-0.5 text-xs bg-white dark:bg-slate-800" data-command="fontSize">
-                                <option value="1">10pt</option>
-                                <option value="2">13pt</option>
-                                <option value="3" selected>16pt</option>
-                                <option value="4">18pt</option>
-                                <option value="5">24pt</option>
-                                <option value="6">32pt</option>
-                            </select>
-                        </div>
-                        <div class="flex gap-1 items-center">
-                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 font-bold w-6 text-center" data-command="bold" title="Bold">B</button>
-                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 italic w-6 text-center" data-command="italic" title="Italic">I</button>
-                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 underline w-6 text-center" data-command="underline" title="Underline">U</button>
-                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 line-through w-6 text-center" data-command="strikeThrough" title="Strikethrough">ab</button>
-                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-xs w-6 text-center" data-command="subscript" title="Subscript">x<sub>2</sub></button>
-                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-xs w-6 text-center" data-command="superscript" title="Superscript">x<sup>2</sup></button>
-                            <div class="w-px h-4 bg-gray-300 mx-1"></div>
-                            <label class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer flex items-center relative" title="Text Color">
-                                <i class="ph ph-text-a text-lg" id="icon-forecolor" style="border-bottom: 3px solid #000;"></i>
-                                <input type="color" class="format-color absolute opacity-0 w-0 h-0" data-command="foreColor" data-icon="icon-forecolor">
-                            </label>
-                            <label class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer flex items-center relative" title="Highlight Color">
-                                <i class="ph ph-highlighter text-lg" id="icon-hilite" style="border-bottom: 3px solid #ffff00;"></i>
-                                <input type="color" class="format-color absolute opacity-0 w-0 h-0" data-command="hiliteColor" data-icon="icon-hilite" value="#ffff00">
-                            </label>
-                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-pink-600" data-command="removeFormat" title="Clear Formatting">
-                                <i class="ph ph-eraser text-lg"></i>
+                <div id="tab-home" class="ribbon-panel active flex">
+                    <!-- Clipboard Group -->
+                    <div class="ribbon-group">
+                        <div class="flex flex-col gap-1">
+                            <button id="ribbon-paste-btn" class="ribbon-btn-large">
+                                <i class="ph-bold ph-clipboard-text text-2xl text-blue-600"></i>
+                                <span class="text-[10px]">Paste</span>
                             </button>
                         </div>
-                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest">Font</div>
-                    </div>
-                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 h-full text-slate-700 dark:text-slate-200">
-                        <div class="flex gap-1">
-                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" data-command="insertUnorderedList" title="Bullets"><i class="ph ph-list-bullets text-lg"></i></button>
-                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" data-command="insertOrderedList" title="Numbering"><i class="ph ph-list-numbers text-lg"></i></button>
-                            <div class="w-px h-4 bg-gray-300 mx-1 self-center"></div>
-                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" data-command="outdent" title="Decrease Indent"><i class="ph ph-text-outdent text-lg"></i></button>
-                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" data-command="indent" title="Increase Indent"><i class="ph ph-text-indent text-lg"></i></button>
+                        <div class="flex flex-col gap-0.5 justify-center">
+                            <button class="ribbon-btn-small format-btn" data-command="cut">
+                                <i class="ph ph-scissors"></i> <span>Cut</span>
+                            </button>
+                            <button class="ribbon-btn-small format-btn" data-command="copy">
+                                <i class="ph ph-copy"></i> <span>Copy</span>
+                            </button>
                         </div>
-                        <div class="flex gap-1">
-                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" data-command="justifyLeft" title="Align Left"><i class="ph ph-text-align-left text-lg"></i></button>
-                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" data-command="justifyCenter" title="Align Center"><i class="ph ph-text-align-center text-lg"></i></button>
-                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" data-command="justifyRight" title="Align Right"><i class="ph ph-text-align-right text-lg"></i></button>
-                            <button class="format-btn p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" data-command="justifyFull" title="Justify"><i class="ph ph-text-align-justify text-lg"></i></button>
-                        </div>
-                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest">Paragraph</div>
+                        <span class="ribbon-group-label">Clipboard</span>
                     </div>
-                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 h-full text-slate-700 dark:text-slate-200 justify-between pb-1">
-                        <select class="format-select border border-gray-300 dark:border-slate-600 rounded p-1 text-sm bg-white dark:bg-slate-800 w-32 mt-1" data-command="formatBlock">
-                            <option value="P">Normal Text</option>
-                            <option value="H1">Heading 1</option>
-                            <option value="H2">Heading 2</option>
-                            <option value="H3">Heading 3</option>
-                            <option value="BLOCKQUOTE">Quote Block</option>
-                        </select>
-                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest">Styles</div>
+
+                    <!-- Font Group -->
+                    <div class="ribbon-group">
+                        <div class="flex flex-col gap-1 w-48">
+                            <div class="flex gap-1">
+                                <select class="format-select text-xs p-1 border rounded w-full bg-white dark:bg-slate-800" data-command="fontName">
+                                    <option value="Inter">Inter</option>
+                                    <option value="Lora">Lora</option>
+                                    <option value="Arial">Arial</option>
+                                    <option value="Times New Roman">Times New Roman</option>
+                                    <option value="Courier New">Courier New</option>
+                                </select>
+                                <select class="format-select text-xs p-1 border rounded w-16 bg-white dark:bg-slate-800" data-command="fontSize">
+                                    <option value="3">12pt</option>
+                                    <option value="1">8pt</option>
+                                    <option value="2">10pt</option>
+                                    <option value="4">14pt</option>
+                                    <option value="5">18pt</option>
+                                    <option value="6">24pt</option>
+                                    <option value="7">36pt</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-0.5 flex-wrap">
+                                <button class="format-btn p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700" data-command="bold" title="Bold"><i class="ph-bold ph-text-b"></i></button>
+                                <button class="format-btn p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700" data-command="italic" title="Italic"><i class="ph-bold ph-text-italic"></i></button>
+                                <button class="format-btn p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700" data-command="underline" title="Underline"><i class="ph-bold ph-text-underline"></i></button>
+                                <button class="format-btn p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700" data-command="strikeThrough" title="Strikethrough"><i class="ph-bold ph-text-strikethrough"></i></button>
+                                <div class="w-px h-6 bg-gray-200 dark:bg-slate-700 mx-0.5"></div>
+                                <button class="format-btn p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700" data-command="subscript" title="Subscript"><i class="ph-bold ph-text-subscript"></i></button>
+                                <button class="format-btn p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700" data-command="superscript" title="Superscript"><i class="ph-bold ph-text-superscript"></i></button>
+                                <div class="w-px h-6 bg-gray-200 dark:bg-slate-700 mx-0.5"></div>
+                                <div class="relative group/color p-1 hover:bg-gray-200 dark:hover:bg-slate-700 rounded cursor-pointer">
+                                    <i class="ph-bold ph-text-aa border-b-4 border-red-600" id="font-color-icon"></i>
+                                    <input type="color" class="format-color absolute inset-0 opacity-0 cursor-pointer" data-command="foreColor" data-icon="font-color-icon">
+                                </div>
+                                <div class="relative group/color p-1 hover:bg-gray-200 dark:hover:bg-slate-700 rounded cursor-pointer">
+                                    <i class="ph-bold ph-highlighter border-b-4 border-yellow-300" id="bg-color-icon"></i>
+                                    <input type="color" class="format-color absolute inset-0 opacity-0 cursor-pointer" data-command="hiliteColor" data-icon="bg-color-icon">
+                                </div>
+                            </div>
+                        </div>
+                        <span class="ribbon-group-label">Font</span>
+                    </div>
+
+                    <!-- Paragraph Group -->
+                    <div class="ribbon-group">
+                        <div class="flex flex-col gap-1">
+                            <div class="flex items-center gap-0.5">
+                                <button class="format-btn p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700" data-command="insertUnorderedList" title="Bullets"><i class="ph-bold ph-list-bullets"></i></button>
+                                <button class="format-btn p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700" data-command="insertOrderedList" title="Numbering"><i class="ph-bold ph-list-numbers"></i></button>
+                                <div class="w-px h-6 bg-gray-200 dark:bg-slate-700 mx-0.5"></div>
+                                <button class="format-btn p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700" data-command="outdent" title="Decrease Indent"><i class="ph-bold ph-text-outdent"></i></button>
+                                <button class="format-btn p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700" data-command="indent" title="Increase Indent"><i class="ph-bold ph-text-indent"></i></button>
+                            </div>
+                            <div class="flex items-center gap-0.5">
+                                <button class="format-btn p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700" data-command="justifyLeft" title="Align Left"><i class="ph-bold ph-text-align-left"></i></button>
+                                <button class="format-btn p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700" data-command="justifyCenter" title="Align Center"><i class="ph-bold ph-text-align-center"></i></button>
+                                <button class="format-btn p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700" data-command="justifyRight" title="Align Right"><i class="ph-bold ph-text-align-right"></i></button>
+                                <button class="format-btn p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700" data-command="justifyFull" title="Justify"><i class="ph-bold ph-text-align-justify"></i></button>
+                            </div>
+                        </div>
+                        <span class="ribbon-group-label">Paragraph</span>
+                    </div>
+
+                    <!-- Styles Group -->
+                    <div class="ribbon-group flex-row items-start gap-1 p-1">
+                        <button class="format-btn p-2 border rounded bg-white dark:bg-slate-800 flex flex-col items-start min-w-[70px]" data-command="formatBlock" data-value="p">
+                            <span class="text-[10px] opacity-50">AaBbCc</span>
+                            <span class="font-bold text-[10px]">Normal</span>
+                        </button>
+                        <button class="format-btn p-2 border rounded bg-white dark:bg-slate-800 flex flex-col items-start min-w-[70px]" data-command="formatBlock" data-value="h1">
+                            <span class="text-[10px] opacity-50">AaBbCc</span>
+                            <span class="font-bold text-[10px]">Heading 1</span>
+                        </button>
+                        <button class="format-btn p-2 border rounded bg-white dark:bg-slate-800 flex flex-col items-start min-w-[70px]" data-command="formatBlock" data-value="h2">
+                            <span class="text-[10px] opacity-50">AaBbCc</span>
+                            <span class="font-bold text-[10px]">Heading 2</span>
+                        </button>
+                        <span class="ribbon-group-label">Styles</span>
                     </div>
                 </div>
 
                 <!-- 2. INSERT TAB -->
-                <div id="tab-insert" class="ribbon-panel hidden flex p-2 gap-4 overflow-x-auto min-h-[85px] items-center text-slate-700 dark:text-slate-200">
-                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative">
-                        <button id="ribbon-add-section-btn" class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10">
-                            <i class="ph ph-file-plus text-2xl text-blue-600"></i>
-                            <span class="text-[10px] mt-1 font-medium">Blank Section</span>
+                <div id="tab-insert" class="ribbon-panel">
+                    <!-- Pages Group -->
+                    <div class="ribbon-group">
+                        <button id="ribbon-add-section-btn" class="ribbon-btn-large">
+                            <i class="ph-bold ph-plus-circle text-2xl text-blue-600"></i>
+                            <span>New Section</span>
                         </button>
-                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest absolute bottom-0">Pages</div>
+                        <span class="ribbon-group-label">Pages</span>
                     </div>
-                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative">
-                        <button id="ribbon-insert-toc-btn" class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" title="Insert an auto-generated Table of Contents into the document">
-                            <i class="ph ph-list-dashes text-2xl text-purple-600"></i>
-                            <span class="text-[10px] mt-1 font-medium">Table of Contents</span>
+
+                    <!-- Tables Group -->
+                    <div class="ribbon-group">
+                        <button onclick="window.insertTable()" class="ribbon-btn-large">
+                            <i class="ph-bold ph-table text-2xl text-orange-600"></i>
+                            <span>Table</span>
                         </button>
-                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest absolute bottom-0">Index</div>
+                        <span class="ribbon-group-label">Tables</span>
                     </div>
-                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative">
-                        <button onclick="window.insertTable()" class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-orange-600">
-                            <i class="ph ph-table text-2xl"></i>
-                            <span class="text-[10px] mt-1 font-medium">Table</span>
-                        </button>
-                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest absolute bottom-0">Tables</div>
-                    </div>
-                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative">
-                        <div class="flex gap-4">
-                            <label class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer">
-                                <i class="ph ph-image text-2xl text-green-600"></i>
-                                <span class="text-[10px] mt-1 font-medium">Book Cover</span>
-                                <input type="file" id="cover-upload" accept="image/*" class="hidden">
-                            </label>
-                            <label class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer">
-                                <i class="ph ph-image-square text-2xl text-blue-500"></i>
-                                <span class="text-[10px] mt-1 font-medium">Pictures</span>
+
+                    <!-- Illustrations Group -->
+                    <div class="ribbon-group">
+                        <div class="flex gap-2">
+                            <label class="ribbon-btn-large cursor-pointer">
+                                <i class="ph-bold ph-image text-2xl text-green-600"></i>
+                                <span>Pictures</span>
                                 <input type="file" accept="image/*" class="hidden" onchange="window.insertInlineImage(this)">
                             </label>
+                            <label class="ribbon-btn-large cursor-pointer">
+                                <i class="ph-bold ph-camera text-2xl text-purple-600"></i>
+                                <span>Cover</span>
+                                <input type="file" id="cover-upload" accept="image/*" class="hidden">
+                            </label>
                         </div>
-                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest absolute bottom-0">Illustrations</div>
+                        <span class="ribbon-group-label">Illustrations</span>
                     </div>
-                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative">
-                        <button id="ribbon-link-btn" class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10">
-                            <i class="ph ph-link text-2xl text-blue-500"></i>
-                            <span class="text-[10px] mt-1 font-medium">Hyperlink</span>
+
+                    <!-- Links Group -->
+                    <div class="ribbon-group">
+                        <button id="ribbon-link-btn" class="ribbon-btn-large">
+                            <i class="ph-bold ph-link text-2xl text-blue-400"></i>
+                            <span>Link</span>
                         </button>
-                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest absolute bottom-0">Links</div>
+                        <span class="ribbon-group-label">Links</span>
+                    </div>
+
+                    <!-- Index Group -->
+                    <div class="ribbon-group">
+                        <button id="ribbon-insert-toc-btn" class="ribbon-btn-large">
+                            <i class="ph-bold ph-list-dashes text-2xl text-indigo-600"></i>
+                            <span>TOC</span>
+                        </button>
+                        <span class="ribbon-group-label">Index</span>
                     </div>
                 </div>
 
-                <!-- 3. LAYOUT & DESIGN TAB -->
-                <div id="tab-layout" class="ribbon-panel hidden flex p-2 gap-4 overflow-x-auto min-h-[85px] items-center text-slate-700 dark:text-slate-200">
-                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative">
-                        <div class="flex flex-col items-center p-1">
-                            <select class="border border-gray-300 dark:border-slate-600 rounded p-1 text-sm bg-white dark:bg-slate-800" onchange="window.changeMargins(this.value)">
-                                <option value="max-w-3xl">Normal Margins</option>
-                                <option value="max-w-5xl">Narrow Margins</option>
-                                <option value="max-w-xl">Wide Margins</option>
-                            </select>
-                        </div>
-                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest absolute bottom-0">Page Setup</div>
-                    </div>
-                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative">
-                        <div class="flex gap-2 items-center p-1 mt-1">
-                            <button class="theme-btn w-6 h-6 rounded border-2 border-gray-300 shadow-sm transition-all" style="background-color: white;" data-theme="theme-light" title="Light Theme"></button>
-                            <button class="theme-btn w-6 h-6 rounded border-2 border-gray-300 shadow-sm transition-all" style="background-color: #f4ecd8;" data-theme="theme-sepia" title="Sepia Theme"></button>
-                            <button class="theme-btn w-6 h-6 rounded border-2 border-gray-300 shadow-sm transition-all" style="background-color: #0f172a;" data-theme="theme-dark" title="Dark Theme"></button>
-                        </div>
-                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest absolute bottom-0">Page Background</div>
-                    </div>
-                </div>
-
-                <!-- 4. REVIEW TAB -->
-                <div id="tab-review" class="ribbon-panel hidden flex p-2 gap-4 overflow-x-auto min-h-[85px] items-center text-slate-700 dark:text-slate-200">
-                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative">
+                <!-- 3. DESIGN TAB -->
+                <div id="tab-design" class="ribbon-panel">
+                    <!-- Themes Group -->
+                    <div class="ribbon-group">
                         <div class="flex gap-2">
-                            <button class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" onclick="window.toggleSpellCheck()">
-                                <i class="ph ph-text-aa text-2xl text-blue-600"></i>
-                                <span class="text-[10px] mt-1 font-medium">Spelling</span>
+                            <button class="ribbon-btn-large theme-btn" data-theme="theme-light">
+                                <i class="ph-bold ph-sun text-2xl text-orange-400"></i>
+                                <span>Light</span>
                             </button>
-                            <button class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" onclick="window.calculateWordCount()">
-                                <i class="ph ph-text-align-left text-2xl text-slate-600"></i>
-                                <span class="text-[10px] mt-1 font-medium">Word Count</span>
+                            <button class="ribbon-btn-large theme-btn" data-theme="theme-sepia">
+                                <i class="ph-bold ph-coffee text-2xl text-yellow-700"></i>
+                                <span>Sepia</span>
+                            </button>
+                            <button class="ribbon-btn-large theme-btn" data-theme="theme-dark">
+                                <i class="ph-bold ph-moon text-2xl text-slate-600"></i>
+                                <span>Dark</span>
                             </button>
                         </div>
-                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest absolute bottom-0">Proofing</div>
+                        <span class="ribbon-group-label">Themes</span>
+                    </div>
+
+                    <!-- Page Background Group -->
+                    <div class="ribbon-group">
+                        <div class="flex flex-col gap-0.5">
+                            <button onclick="window.setWatermark(prompt('Enter Watermark Text:'))" class="ribbon-btn-small">
+                                <i class="ph-bold ph-text-aa"></i> <span>Watermark</span>
+                            </button>
+                            <button onclick="window.setPageColor(prompt('Enter Hex Color (e.g. #ffffff):'))" class="ribbon-btn-small">
+                                <i class="ph-bold ph-palette"></i> <span>Page Color</span>
+                            </button>
+                            <button onclick="window.togglePageBorders()" class="ribbon-btn-small">
+                                <i class="ph-bold ph-frame-corners"></i> <span>Page Borders</span>
+                            </button>
+                        </div>
+                        <span class="ribbon-group-label">Page Background</span>
                     </div>
                 </div>
 
-                <!-- 5. VIEW TAB -->
-                <div id="tab-view" class="ribbon-panel hidden flex p-2 gap-4 overflow-x-auto min-h-[85px] items-center text-slate-700 dark:text-slate-200">
-                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative">
-                        <button class="flex flex-col items-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" onclick="document.getElementById('toggle-edit-btn').click()">
-                            <i class="ph ph-book-open text-2xl text-blue-600"></i>
-                            <span class="text-[10px] mt-1 font-medium">Read Mode</span>
-                        </button>
-                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest absolute bottom-0">Views</div>
-                    </div>
-                    <div class="flex flex-col gap-1 border-r border-gray-300 dark:border-slate-700 pr-4 justify-center items-center h-full pb-4 relative">
-                        <div class="flex items-center gap-2 mt-1">
-                            <button class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" onclick="window.changeZoom(-1)"><i class="ph ph-magnifying-glass-minus text-lg"></i></button>
-                            <span id="zoom-level" class="text-xs font-semibold w-10 text-center">100%</span>
-                            <button class="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10" onclick="window.changeZoom(1)"><i class="ph ph-magnifying-glass-plus text-lg"></i></button>
+                <!-- 4. LAYOUT TAB -->
+                <div id="tab-layout" class="ribbon-panel">
+                    <!-- Page Setup Group -->
+                    <div class="ribbon-group">
+                        <div class="flex gap-1 justify-center items-center h-full">
+                            <button onclick="window.changeMargins('max-w-3xl')" class="ribbon-btn-large">
+                                <i class="ph-bold ph-frame-corners text-2xl text-blue-600"></i>
+                                <span>Margins</span>
+                            </button>
+                            <div class="flex flex-col gap-0.5">
+                                <button onclick="window.setOrientation('portrait')" class="ribbon-btn-small">
+                                    <i class="ph ph-file"></i> <span>Portrait</span>
+                                </button>
+                                <button onclick="window.setOrientation('landscape')" class="ribbon-btn-small">
+                                    <i class="ph ph-file-dashed"></i> <span>Landscape</span>
+                                </button>
+                            </div>
                         </div>
-                        <div class="text-[9px] text-center text-gray-500 font-medium uppercase mt-1 tracking-widest absolute bottom-0">Zoom</div>
+                        <span class="ribbon-group-label">Page Setup</span>
+                    </div>
+
+                    <!-- Paragraph Group (Spacing) -->
+                    <div class="ribbon-group">
+                        <div class="flex flex-col gap-1 w-32">
+                            <div class="flex justify-between items-center text-[10px]">
+                                <span>Indent Left:</span>
+                                <input type="number" value="0" class="w-12 border rounded px-1 dark:bg-slate-800" onchange="window.setIndent(this.value, 'left')">
+                            </div>
+                            <div class="flex justify-between items-center text-[10px]">
+                                <span>Spacing:</span>
+                                <input type="number" value="0" class="w-12 border rounded px-1 dark:bg-slate-800" onchange="window.setSpacing(this.value)">
+                            </div>
+                        </div>
+                        <span class="ribbon-group-label">Paragraph</span>
+                    </div>
+                </div>
+
+                <!-- 5. REVIEW TAB -->
+                <div id="tab-review" class="ribbon-panel">
+                    <!-- Proofing Group -->
+                    <div class="ribbon-group">
+                        <div class="flex gap-2">
+                            <button onclick="window.toggleSpellCheck()" class="ribbon-btn-large">
+                                <i class="ph-bold ph-text-aa text-2xl text-blue-600"></i>
+                                <span>Spelling</span>
+                            </button>
+                            <button onclick="window.calculateWordCount()" class="ribbon-btn-large">
+                                <i class="ph-bold ph-hash text-2xl text-slate-500"></i>
+                                <span>Word Count</span>
+                            </button>
+                        </div>
+                        <span class="ribbon-group-label">Proofing</span>
+                    </div>
+                </div>
+
+                <!-- 6. VIEW TAB -->
+                <div id="tab-view" class="ribbon-panel">
+                    <!-- Views Group -->
+                    <div class="ribbon-group">
+                        <div class="flex gap-2">
+                            <button onclick="document.getElementById('toggle-edit-btn').click()" class="ribbon-btn-large">
+                                <i class="ph-bold ph-book-open text-2xl text-blue-600"></i>
+                                <span>Read Mode</span>
+                            </button>
+                            <button class="ribbon-btn-large bg-gray-100 dark:bg-slate-800">
+                                <i class="ph-bold ph-layout text-2xl text-gray-600"></i>
+                                <span>Print Layout</span>
+                            </button>
+                        </div>
+                        <span class="ribbon-group-label">Views</span>
+                    </div>
+
+                    <!-- Show Group -->
+                    <div class="ribbon-group">
+                        <div class="flex flex-col gap-0.5 justify-center h-full">
+                            <label class="flex items-center gap-2 text-[10px] cursor-pointer">
+                                <input type="checkbox" onchange="window.toggleRuler(this.checked)"> Ruler
+                            </label>
+                            <label class="flex items-center gap-2 text-[10px] cursor-pointer">
+                                <input type="checkbox" onchange="window.toggleGridlines(this.checked)"> Gridlines
+                            </label>
+                            <label class="flex items-center gap-2 text-[10px] cursor-pointer">
+                                <input type="checkbox" checked> Navigation Pane
+                            </label>
+                        </div>
+                        <span class="ribbon-group-label">Show</span>
+                    </div>
+
+                    <!-- Zoom Group -->
+                    <div class="ribbon-group">
+                        <div class="flex gap-1 items-center h-full">
+                            <button onclick="window.changeZoom(0, 100)" class="ribbon-btn-large">
+                                <i class="ph-bold ph-magnifying-glass text-2xl text-blue-500"></i>
+                                <span>100%</span>
+                            </button>
+                            <div class="flex flex-col gap-0.5">
+                                <button onclick="window.changeZoom(0, 'width')" class="ribbon-btn-small">
+                                    <i class="ph ph-arrows-out-line-horizontal"></i> <span>Page Width</span>
+                                </button>
+                                <button onclick="window.changeZoom(0, 'auto')" class="ribbon-btn-small">
+                                    <i class="ph ph-copy"></i> <span>Two Pages</span>
+                                </button>
+                            </div>
+                        </div>
+                        <span class="ribbon-group-label">Zoom</span>
                     </div>
                 </div>
 
@@ -900,7 +1155,6 @@
                         loadChapter(index);
                         if (window.innerWidth < 768) toggleSidebar();
                     });
-
                     rowContainer.appendChild(btn);
 
                     if (isEditMode) {
@@ -1345,21 +1599,99 @@
             document.querySelectorAll('.ribbon-tab-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const targetId = btn.getAttribute('data-target');
-                    document.querySelectorAll('.ribbon-panel').forEach(panel => { panel.classList.add('hidden'); panel.classList.remove('flex'); });
-                    document.querySelectorAll('.ribbon-tab-btn').forEach(t => {
-                        t.classList.remove('text-blue-600', 'border-blue-600', 'bg-office-bg', 'dark:bg-slate-900', 'text-purple-600', 'border-purple-600', 'bg-purple-50', 'dark:bg-purple-900/10', 'text-pink-600', 'border-pink-600', 'bg-pink-50', 'dark:bg-pink-900/10');
-                        t.classList.add(t.classList.contains('contextual-tab') ? '' : 'text-gray-600');
-                        if(!t.classList.contains('contextual-tab')) t.classList.add('dark:text-gray-300');
-                        t.classList.add('border-transparent');
-                    });
                     
-                    document.getElementById(targetId).classList.remove('hidden'); document.getElementById(targetId).classList.add('flex');
-                    if(targetId === 'tab-table-design' || targetId === 'tab-table-layout') btn.classList.add('text-purple-600', 'border-purple-600', 'bg-purple-50', 'dark:bg-purple-900/10');
-                    else if (targetId === 'tab-picture-format') btn.classList.add('text-pink-600', 'border-pink-600', 'bg-pink-50', 'dark:bg-pink-900/10');
-                    else btn.classList.add('text-blue-600', 'border-blue-600', 'bg-office-bg', 'dark:bg-slate-900');
-                    btn.classList.remove('text-gray-600', 'dark:text-gray-300', 'border-transparent');
+                    // Update Panels
+                    document.querySelectorAll('.ribbon-panel').forEach(panel => {
+                        panel.classList.remove('active', 'flex');
+                        panel.style.display = 'none';
+                    });
+                    const targetPanel = document.getElementById(targetId);
+                    if (targetPanel) {
+                        targetPanel.classList.add('active', 'flex');
+                        targetPanel.style.display = 'flex';
+                    }
+
+                    // Update Tab Button Styles
+                    document.querySelectorAll('.ribbon-tab-btn').forEach(t => {
+                        t.classList.remove('border-blue-600', 'text-blue-600', 'border-purple-600', 'text-purple-600', 'border-pink-600', 'text-pink-600');
+                        t.querySelector('.active-tab-indicator')?.remove();
+                    });
+
+                    // Add indicator
+                    const indicator = document.createElement('div');
+                    if (targetId.includes('table')) {
+                        btn.classList.add('text-purple-600', 'border-purple-600');
+                        indicator.className = 'contextual-tab-indicator-purple';
+                    } else if (targetId.includes('picture')) {
+                        btn.classList.add('text-pink-600', 'border-pink-600');
+                        indicator.className = 'contextual-tab-indicator-pink';
+                    } else {
+                        btn.classList.add('text-blue-600', 'border-blue-600');
+                        indicator.className = 'active-tab-indicator';
+                    }
+                    btn.appendChild(indicator);
                 });
             });
+
+            // --- Layout & Design Logic ---
+            window.changeZoom = function(dir, level) {
+                const container = document.getElementById('book-container');
+                if (level === 100) currentZoom = 100;
+                else if (level === 'width') {
+                    const availableWidth = container.parentElement.clientWidth - 100;
+                    currentZoom = Math.floor((availableWidth / 794) * 100); // 794px is roughly 210mm
+                } else if (level === 'auto') {
+                    currentZoom = 70; // Approximation for two pages
+                } else {
+                    currentZoom += dir * 10;
+                }
+                currentZoom = Math.max(30, Math.min(300, currentZoom));
+                container.style.transform = `scale(${currentZoom / 100})`;
+                container.style.transformOrigin = 'top center';
+                const zoomLabel = document.getElementById('zoom-level');
+                if (zoomLabel) zoomLabel.textContent = currentZoom + '%';
+            };
+
+            window.toggleRuler = function(show) {
+                document.querySelectorAll('.ruler-h, .ruler-v').forEach(r => r.style.display = show ? 'block' : 'none');
+            };
+
+            window.toggleGridlines = function(show) {
+                document.querySelectorAll('.a4-page').forEach(p => p.setAttribute('data-grid', show ? 'true' : 'false'));
+            };
+
+            window.setWatermark = function(text) {
+                if (!text) return;
+                document.querySelectorAll('.a4-page').forEach(p => p.setAttribute('data-watermark', text));
+                autoSave();
+            };
+
+            window.setPageColor = function(color) {
+                if (!color) return;
+                document.querySelectorAll('.a4-page').forEach(p => p.style.backgroundColor = color);
+                autoSave();
+            };
+
+            window.togglePageBorders = function() {
+                document.querySelectorAll('.a4-page').forEach(p => {
+                    p.style.border = p.style.border ? '' : '1px solid #000';
+                });
+                autoSave();
+            };
+
+            window.setOrientation = function(o) {
+                document.querySelectorAll('.a4-page').forEach(p => {
+                    if (o === 'landscape') {
+                        p.style.width = '297mm';
+                        p.style.minHeight = '210mm';
+                    } else {
+                        p.style.width = '210mm';
+                        p.style.minHeight = '297mm';
+                    }
+                });
+                paginateAll();
+                autoSave();
+            };
 
             // --- Ribbon Commands ---
             editorContent.addEventListener('input', autoSave); bookTitleInput.addEventListener('input', autoSave);
@@ -1600,9 +1932,89 @@
                     }
                 }
             }
-            // Navigation
-            prevBtn.addEventListener('click', () => { saveLocally(); loadChapter(currentChapterIndex - 1); });
-            nextBtn.addEventListener('click', () => { saveLocally(); loadChapter(currentChapterIndex + 1); });
+            // --- Advanced Logic ---
+            window.setIndent = function(val, side) {
+                const sel = window.getSelection();
+                if (!sel.rangeCount) return;
+                let node = sel.anchorNode;
+                if (node.nodeType === 3) node = node.parentNode;
+                const p = node.closest('p, h1, h2, h3, li');
+                if (p) {
+                    p.style.paddingLeft = val + 'px';
+                    autoSave();
+                }
+            };
+
+            window.setSpacing = function(val) {
+                const sel = window.getSelection();
+                if (!sel.rangeCount) return;
+                let node = sel.anchorNode;
+                if (node.nodeType === 3) node = node.parentNode;
+                const p = node.closest('p, h1, h2, h3, li');
+                if (p) {
+                    p.style.marginBottom = val + 'px';
+                    autoSave();
+                }
+            };
+
+            window.tableMergeCells = function() {
+                if (!currentTable) return;
+                const sel = window.getSelection();
+                // Simplified merge for MVP: Merge focused cell with next sibling
+                if (currentCell && currentCell.nextElementSibling) {
+                    const next = currentCell.nextElementSibling;
+                    currentCell.colSpan = (currentCell.colSpan || 1) + (next.colSpan || 1);
+                    currentCell.innerHTML += ' ' + next.innerHTML;
+                    next.remove();
+                    autoSave();
+                }
+            };
+
+            window.tableSplitCells = function() {
+                if (!currentCell) return;
+                if (currentCell.colSpan > 1) {
+                    const newCell = document.createElement(currentCell.tagName);
+                    newCell.innerHTML = '<br>';
+                    currentCell.colSpan -= 1;
+                    currentCell.parentNode.insertBefore(newCell, currentCell.nextSibling);
+                    autoSave();
+                }
+            };
+
+            window.tableAlign = function(pos) {
+                if (!currentCell) return;
+                const [v, h] = pos.split('-');
+                currentCell.style.verticalAlign = v === 'top' ? 'top' : (v === 'middle' ? 'middle' : 'bottom');
+                currentCell.style.textAlign = h === 'left' ? 'left' : (h === 'center' ? 'center' : 'right');
+                autoSave();
+            };
+
+            window.imageAdjust = function(filter) {
+                if (!currentImage) return;
+                currentImage.style.filter = filter === 'none' ? '' : filter;
+                autoSave();
+            };
+
+            window.imageStyle = function(style) {
+                if (!currentImage) return;
+                currentImage.className = ''; // reset clases
+                if (style === 'oval') {
+                    currentImage.style.borderRadius = '50%';
+                    currentImage.style.border = '2px solid #ccc';
+                } else if (style === 'simple-frame') {
+                    currentImage.style.border = '4px solid #000';
+                    currentImage.style.padding = '4px';
+                } else if (style === 'shadow-frame') {
+                    currentImage.style.boxShadow = '10px 10px 20px rgba(0,0,0,0.3)';
+                    currentImage.style.border = '1px solid #ccc';
+                } else {
+                    currentImage.style.borderRadius = '';
+                    currentImage.style.border = '';
+                    currentImage.style.boxShadow = '';
+                    currentImage.style.padding = '';
+                }
+                autoSave();
+            };
 
             document.addEventListener('keydown', (e) => {
                 if (isEditMode && document.activeElement && document.activeElement.classList.contains('a4-page')) return;
